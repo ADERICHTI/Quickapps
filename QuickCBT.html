@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Google Sans', sans-serif; 
+            background-color: #f8f9fa; 
+        }
+        .material-card { 
+            background: white; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
+        }
+        .hidden { display: none; }
+        
+        /* Study Mode Animations */
+        @keyframes bounce-green {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        @keyframes shake-red {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+        
+        .animate-celebrate { 
+            animation: bounce-green 0.4s ease-in-out; 
+            background-color: #e6f4ea !important; 
+            border-color: #1e8e3e !important; 
+            color: #137333 !important;
+        }
+        .animate-scold { 
+            animation: shake-red 0.4s ease-in-out; 
+            background-color: #fce8e6 !important; 
+            border-color: #d93025 !important; 
+            color: #a50e0e !important;
+        }
+        .correct-reveal {
+            background-color: #e6f4ea !important;
+            border-color: #1e8e3e !important;
+            color: #137333 !important;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased h-screen flex flex-col items-center justify-center p-4">
+
+    <div id="home-view" class="material-card w-full max-w-2xl p-8 transition-all">
+        <h1 class="text-3xl font-bold mb-2 text-blue-600">CBT Engine</h1>
+        <p class="text-gray-500 mb-6">Paste your JSON question bank and select your testing mode.</p>
+        
+        <textarea id="json-input" class="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none mb-6 font-mono text-sm resize-none shadow-inner" placeholder='{
+  "title": "Module 1 Quiz",
+  "questions": [
+    { 
+      "question": "What is the primary function of...?", 
+      "options": ["A. Option one", "B. Option two", "C. Option three"], 
+      "answer": "B. Option two" 
+    }
+  ]
+}'></textarea>
+
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+            <div class="flex gap-6 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="radio" name="mode" value="practice" checked class="form-radio h-4 w-4 text-blue-600">
+                    <span class="font-medium text-gray-700">Practice Mode</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="radio" name="mode" value="study" class="form-radio h-4 w-4 text-blue-600">
+                    <span class="font-medium text-gray-700">Study Mode</span>
+                </label>
+            </div>
+            <label class="flex items-center space-x-2 cursor-pointer bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <input type="checkbox" id="shuffle-toggle" class="form-checkbox h-4 w-4 text-blue-600 rounded">
+                <span class="font-medium text-gray-700">Shuffle Questions</span>
+            </label>
+        </div>
+
+        <button onclick="startCBT()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg transition-colors shadow-sm text-lg">Launch Test</button>
+    </div>
+
+    <div id="cbt-view" class="material-card w-full max-w-2xl p-8 hidden transition-all flex-col h-auto min-h-[500px]">
+        <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
+            <h2 id="quiz-title" class="text-xl font-bold text-gray-800">Quiz Title</h2>
+            <span id="progress-tracker" class="text-sm font-bold bg-blue-50 text-blue-700 py-1.5 px-4 rounded-full border border-blue-100">1 / 10</span>
+        </div>
+
+        <div class="flex-grow">
+            <div id="question-text" class="text-xl font-medium mb-8 leading-relaxed text-gray-800">Question goes here?</div>
+            <div id="options-container" class="space-y-3 mb-8">
+                </div>
+        </div>
+
+        <div class="flex justify-between items-center mt-auto pt-6 border-t border-gray-100">
+            <button onclick="endCBT()" class="text-gray-500 hover:text-red-600 font-medium transition-colors px-4 py-2 rounded hover:bg-red-50">End Early</button>
+            <button id="next-btn" onclick="nextQuestion()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-8 rounded-lg transition-colors hidden shadow-sm">Next</button>
+        </div>
+    </div>
+
+    <script>
+        let quizData = null;
+        let currentMode = 'practice';
+        let currentIndex = 0;
+        let score = 0;
+        let userAnswers = []; // Used for Practice mode recap
+
+        function startCBT() {
+            try {
+                const rawData = document.getElementById('json-input').value;
+                quizData = JSON.parse(rawData || '{"title":"Empty","questions":[]}');
+                
+                if (!quizData.questions || quizData.questions.length === 0) {
+                    alert("Please provide valid questions in the JSON array.");
+                    return;
+                }
+
+                if(document.getElementById('shuffle-toggle').checked) {
+                    quizData.questions.sort(() => Math.random() - 0.5);
+                }
+                
+                currentMode = document.querySelector('input[name="mode"]:checked').value;
+                currentIndex = 0;
+                score = 0;
+                userAnswers = [];
+
+                document.getElementById('home-view').classList.add('hidden');
+                document.getElementById('cbt-view').classList.remove('hidden');
+                document.getElementById('cbt-view').classList.add('flex');
+                document.getElementById('quiz-title').innerText = quizData.title;
+                
+                loadQuestion();
+            } catch (e) {
+                alert("Invalid JSON format. Please ensure your syntax matches the placeholder exactly.");
+            }
+        }
+
+        function loadQuestion() {
+            if (currentIndex >= quizData.questions.length) return endCBT();
+
+            const q = quizData.questions[currentIndex];
+            document.getElementById('progress-tracker').innerText = `${currentIndex + 1} / ${quizData.questions.length}`;
+            document.getElementById('question-text').innerText = q.question;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            document.getElementById('next-btn').classList.add('hidden');
+
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 transition-all font-medium text-gray-700 shadow-sm";
+                btn.innerText = opt;
+                btn.onclick = () => handleAnswer(btn, opt, q.answer);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(selectedBtn, selectedText, correctAnswer) {
+            const isCorrect = selectedText === correctAnswer;
+            const buttons = document.getElementById('options-container').querySelectorAll('button');
+            
+            if (isCorrect) score++;
+            
+            // Lock buttons
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('hover:bg-blue-50', 'hover:border-blue-200', 'cursor-pointer');
+                btn.classList.add('cursor-not-allowed', 'opacity-70');
+            });
+
+            if (currentMode === 'study') {
+                selectedBtn.classList.remove('opacity-70');
+                if (isCorrect) {
+                    selectedBtn.classList.add('animate-celebrate');
+                } else {
+                    selectedBtn.classList.add('animate-scold');
+                    // Highlight the correct answer
+                    buttons.forEach(btn => {
+                        if (btn.innerText === correctAnswer) {
+                            btn.classList.remove('opacity-70');
+                            btn.classList.add('correct-reveal');
+                        }
+                    });
+                }
+                document.getElementById('next-btn').classList.remove('hidden');
+            } else {
+                // Practice mode: Highlight selection silently, show next button
+                selectedBtn.classList.remove('opacity-70');
+                selectedBtn.classList.add('bg-blue-100', 'border-blue-300', 'text-blue-800');
+                document.getElementById('next-btn').classList.remove('hidden');
+            }
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            loadQuestion();
+        }
+
+        function endCBT() {
+            const percentage = Math.round((score / quizData.questions.length) * 100);
+            let message = "";
+            if (percentage >= 80) message = "Excellent work!";
+            else if (percentage >= 50) message = "Good effort, keep practicing!";
+            else message = "Time for a review session.";
+
+            document.getElementById('cbt-view').innerHTML = `
+                <div class="text-center py-10 flex flex-col items-center justify-center h-full">
+                    <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                        <span class="text-4xl">🎯</span>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Test Complete</h2>
+                    <p class="text-lg text-gray-600 mb-6">${message}</p>
+                    
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-6 w-full max-w-sm mb-8">
+                        <div class="text-5xl font-bold text-blue-600 mb-2">${score} <span class="text-2xl text-gray-400">/ ${quizData.questions.length}</span></div>
+                        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Final Score (${percentage}%)</div>
+                    </div>
+
+                    <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-sm">Take Another Test</button>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
