@@ -3,122 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBT Engine</title>
+    <title>CBT Pro Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #f0f2f5; }
-        .app-card { background: white; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
-        .hidden { display: none !important; }
-        .correct-reveal { background-color: #d1fae5 !important; border-color: #10b981 !important; color: #065f46 !important; }
-        .wrong-reveal { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b !important; }
+        body { background: #f3f4f6; }
+        .nav-scroll::-webkit-scrollbar { height: 6px; }
+        .nav-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+        .correct { background: #d1fae5; border-color: #059669; }
+        .wrong { background: #fee2e2; border-color: #dc2626; }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 md:p-8">
+<body class="p-4 md:p-10">
 
-    <div id="home-view" class="app-card w-full max-w-xl p-8 space-y-6">
-        <h1 class="text-3xl font-bold text-gray-900">CBT Engine</h1>
-        <textarea id="json-input" class="w-full h-48 p-4 bg-gray-50 border border-gray-200 rounded-xl font-mono text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder='Paste your JSON here...'></textarea>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold text-gray-600">Test Mode</label>
-                <select id="mode-select" class="p-3 border rounded-lg bg-white">
-                    <option value="practice">Practice Mode</option>
-                    <option value="study">Study Mode</option>
-                </select>
-            </div>
-            <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold text-gray-600">Question Count</label>
-                <input type="number" id="question-limit" value="10" min="1" class="p-3 border rounded-lg">
-            </div>
+    <div id="home-view" class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-sm">
+        <h1 class="text-2xl font-bold mb-4">CBT Engine</h1>
+        <textarea id="json-input" class="w-full h-96 p-4 border rounded-xl font-mono text-xs" placeholder="Paste your large JSON bank here..."></textarea>
+        <div class="flex gap-4 mt-6">
+            <input type="number" id="question-limit" value="10" class="border p-2 rounded w-24">
+            <button onclick="startTest()" class="bg-blue-600 text-white px-8 py-2 rounded-lg font-bold">Start Test</button>
         </div>
-        
-        <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="shuffle-toggle" class="w-5 h-5 text-blue-600">
-            <span>Shuffle Questions</span>
-        </label>
-        
-        <button onclick="startTest()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg">Start Test</button>
     </div>
 
-    <div id="cbt-view" class="app-card w-full max-w-2xl p-8 hidden flex-col">
-        <div class="flex justify-between items-center mb-6">
-            <h2 id="quiz-title" class="text-xl font-bold"></h2>
-            <span id="progress" class="text-sm font-bold bg-blue-100 text-blue-800 px-3 py-1 rounded-full"></span>
-        </div>
-        <div id="question-area" class="mb-8">
-            <p id="q-text" class="text-lg font-medium mb-6"></p>
+    <div id="cbt-view" class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-sm hidden">
+        <div id="nav-strip" class="flex gap-2 overflow-x-auto pb-4 nav-scroll mb-6 border-b"></div>
+        <div id="q-content" class="min-h-[300px]">
+            <h2 id="q-text" class="text-xl font-medium mb-6"></h2>
             <div id="options" class="space-y-3"></div>
         </div>
-        <button id="next-btn" onclick="nextQ()" class="hidden w-full bg-blue-600 text-white font-bold py-3 rounded-lg">Next Question</button>
+        <div class="flex justify-between mt-10">
+            <button onclick="changeQ(-1)" class="text-gray-500 font-bold">Previous</button>
+            <button onclick="changeQ(1)" class="bg-gray-800 text-white px-6 py-2 rounded-lg">Next</button>
+        </div>
     </div>
 
     <script>
-        let quizData, currentIdx, score, mode;
+        let data, currentIdx = 0, userAnswers = [];
 
         function startTest() {
             try {
-                quizData = JSON.parse(document.getElementById('json-input').value);
-                if(document.getElementById('shuffle-toggle').checked) quizData.questions.sort(() => Math.random() - 0.5);
-                
+                data = JSON.parse(document.getElementById('json-input').value).questions;
                 const limit = parseInt(document.getElementById('question-limit').value);
-                quizData.questions = quizData.questions.slice(0, limit);
-
-                mode = document.getElementById('mode-select').value;
-                currentIdx = 0; score = 0;
+                data = data.slice(0, limit);
+                userAnswers = new Array(data.length).fill(null);
                 
                 document.getElementById('home-view').classList.add('hidden');
                 document.getElementById('cbt-view').classList.remove('hidden');
-                document.getElementById('quiz-title').innerText = quizData.title;
+                renderNav();
                 loadQ();
             } catch { alert("Invalid JSON"); }
         }
 
+        function renderNav() {
+            const strip = document.getElementById('nav-strip');
+            strip.innerHTML = data.map((_, i) => `
+                <button onclick="jumpTo(${i})" class="px-4 py-2 bg-gray-100 rounded-lg min-w-[40px] font-bold">
+                    ${i + 1}
+                </button>
+            `).join('');
+        }
+
         function loadQ() {
-            if(currentIdx >= quizData.questions.length) return showResults();
-            const q = quizData.questions[currentIdx];
-            document.getElementById('progress').innerText = `${currentIdx + 1}/${quizData.questions.length}`;
+            const q = data[currentIdx];
             document.getElementById('q-text').innerText = q.question;
             const container = document.getElementById('options');
-            container.innerHTML = '';
-            document.getElementById('next-btn').classList.add('hidden');
-
-            q.options.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = "w-full text-left p-4 border rounded-xl hover:border-blue-400 transition-all";
-                btn.innerText = opt;
-                btn.onclick = () => check(btn, opt, q.answer);
-                container.appendChild(btn);
-            });
+            container.innerHTML = q.options.map(opt => `
+                <button onclick="select('${opt}', '${q.answer}')" 
+                        class="w-full text-left p-4 border rounded-xl hover:bg-blue-50 ${userAnswers[currentIdx] === opt ? 'bg-blue-100' : ''}">
+                    ${opt}
+                </button>
+            `).join('');
         }
 
-        function check(btn, selected, correct) {
-            const btns = document.querySelectorAll('#options button');
-            btns.forEach(b => b.disabled = true);
-            
-            if(selected === correct) {
-                score++;
-                btn.classList.add('correct-reveal');
-            } else {
-                btn.classList.add('wrong-reveal');
-                if(mode === 'study') {
-                    btns.forEach(b => { if(b.innerText === correct) b.classList.add('correct-reveal'); });
-                }
-            }
-            document.getElementById('next-btn').classList.remove('hidden');
+        function select(choice, correct) {
+            userAnswers[currentIdx] = choice;
+            loadQ();
         }
 
-        function nextQ() { currentIdx++; loadQ(); }
-
-        function showResults() {
-            document.getElementById('cbt-view').innerHTML = `
-                <div class="text-center">
-                    <h2 class="text-2xl font-bold mb-4">Quiz Complete!</h2>
-                    <p class="text-4xl font-black text-blue-600 mb-8">${score} / ${quizData.questions.length}</p>
-                    <button onclick="location.reload()" class="bg-gray-800 text-white px-8 py-3 rounded-xl">Back to Home</button>
-                </div>
-            `;
+        function changeQ(dir) {
+            currentIdx = Math.max(0, Math.min(data.length - 1, currentIdx + dir));
+            loadQ();
         }
+
+        function jumpTo(i) { currentIdx = i; loadQ(); }
     </script>
 </body>
 </html>
