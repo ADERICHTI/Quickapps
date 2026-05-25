@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBT Pro Engine</title>
+    <title>CBT Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .nav-scroll::-webkit-scrollbar { height: 6px; }
@@ -102,60 +102,6 @@
                     else if(b.innerText === opt) b.classList.add('wrong');
                 });
             }
-            loadQ();
-        }
-
-        function changeQ(dir) {
-            currentIdx = Math.max(0, Math.min(data.length - 1, currentIdx + dir));
-            loadQ();
-        }
-
-        function jumpTo(i) { currentIdx = i; loadQ(); }
-    </script>
-</body>
-</html>
-    </div>
-
-    <script>
-        let data, currentIdx = 0, userAnswers = [];
-
-        function startTest() {
-            try {
-                data = JSON.parse(document.getElementById('json-input').value).questions;
-                const limit = parseInt(document.getElementById('question-limit').value);
-                data = data.slice(0, limit);
-                userAnswers = new Array(data.length).fill(null);
-                
-                document.getElementById('home-view').classList.add('hidden');
-                document.getElementById('cbt-view').classList.remove('hidden');
-                renderNav();
-                loadQ();
-            } catch { alert("Invalid JSON"); }
-        }
-
-        function renderNav() {
-            const strip = document.getElementById('nav-strip');
-            strip.innerHTML = data.map((_, i) => `
-                <button onclick="jumpTo(${i})" class="px-4 py-2 bg-gray-100 rounded-lg min-w-[40px] font-bold">
-                    ${i + 1}
-                </button>
-            `).join('');
-        }
-
-        function loadQ() {
-            const q = data[currentIdx];
-            document.getElementById('q-text').innerText = q.question;
-            const container = document.getElementById('options');
-            container.innerHTML = q.options.map(opt => `
-                <button onclick="select('${opt}', '${q.answer}')" 
-                        class="w-full text-left p-4 border rounded-xl hover:bg-blue-50 ${userAnswers[currentIdx] === opt ? 'bg-blue-100' : ''}">
-                    ${opt}
-                </button>
-            `).join('');
-        }
-
-        function select(choice, correct) {
-            userAnswers[currentIdx] = choice;
             loadQ();
         }
 
