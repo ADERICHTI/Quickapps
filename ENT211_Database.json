@@ -1,0 +1,168 @@
+{
+  "title": "ENT 211 — Entrepreneurship & Innovation (200 Questions)",
+  "questions": [
+    {
+      "question": "Which of the following BEST defines entrepreneurship according to Stevenson & Jarillo (1990)?",
+      "options": [
+        "A. The management of existing resources within a company",
+        "B. The pursuit of opportunities beyond the resources currently controlled",
+        "C. The process of buying and reselling goods for profit",
+        "D. The act of investing in government bonds"
+      ],
+      "answer": "B. The pursuit of opportunities beyond the resources currently controlled",
+      "explanation": "Stevenson & Jarillo's definition emphasizes the proactive, resourceful, and risk-bearing nature of entrepreneurship — pursuing opportunity regardless of current resource constraints."
+    },
+    {
+      "question": "Joseph Schumpeter (1934) described entrepreneurs as agents of 'creative destruction.' What does this mean?",
+      "options": [
+        "A. Entrepreneurs physically destroy old factories to build new ones",
+        "B. Entrepreneurs create charities that destroy poverty",
+        "C. Entrepreneurs disrupt existing markets with new products and processes, making old ones obsolete",
+        "D. Entrepreneurs destroy competition through aggressive pricing"
+      ],
+      "answer": "C. Entrepreneurs disrupt existing markets with new products and processes, making old ones obsolete",
+      "explanation": "Schumpeter's 'creative destruction' means innovation displaces existing markets and technologies — new ideas replace the old, driving economic progress."
+    },
+    {
+      "question": "Peter Drucker (1985) argued that entrepreneurship is primarily:",
+      "options": [
+        "A. A discipline based on systematic innovation and opportunity recognition, not a personality trait",
+        "B. An innate personality trait present only in naturally gifted individuals",
+        "C. A government-supported activity requiring official licensing",
+        "D. Exclusively about starting new companies in emerging markets"
+      ],
+      "answer": "A. A discipline based on systematic innovation and opportunity recognition, not a personality trait",
+      "explanation": "Drucker's behavioral perspective emphasized that entrepreneurship can be learned and practiced systematically — it is a discipline, not merely a trait."
+    },
+    {
+      "question": "Which Nigerian industry is cited in the slides as a prime example of entrepreneurship driven by creativity despite limited infrastructure?",
+      "options": [
+        "A. The Nigerian oil and gas sector",
+        "B. Nollywood — the Nigerian film industry",
+        "C. The Lagos real estate market",
+        "D. Kano textile manufacturing"
+      ],
+      "answer": "B. Nollywood — the Nigerian film industry",
+      "explanation": "Nollywood is highlighted as an example of entrepreneurship driven by creativity and resourcefulness in Nigeria, now one of the largest film industries in the world."
+    },
+    {
+      "question": "Which myth about entrepreneurship states that only the wealthy can start businesses?",
+      "options": [
+        "A. Myth 1 — Entrepreneurs are born, not made",
+        "B. Myth 2 — Entrepreneurship is only about trading",
+        "C. Myth 3 — Only the wealthy can start businesses",
+        "D. Myth 5 — Failure is permanent"
+      ],
+      "answer": "C. Myth 3 — Only the wealthy can start businesses",
+      "explanation": "Myth 3 conflates entrepreneurship with wealth. The reality is that capital can be sourced creatively through microfinance, crowdfunding, or angel investors."
+    },
+    {
+      "question": "The reality of the myth 'Failure is permanent' in entrepreneurship is that:",
+      "options": [
+        "A. Entrepreneurs who fail once should change careers",
+        "B. Failure is generally a temporary, valuable learning experience and a springboard for future success",
+        "C. Failure proves that the entrepreneur lacks the natural talent needed",
+        "D. Failed businesses can never be revived or rebuilt"
+      ],
+      "answer": "B. Failure is generally a temporary, valuable learning experience and a springboard for future success",
+      "explanation": "The slides explicitly state that failure is a temporary setback and a valuable learning opportunity — 'Failure is a springboard for success.'"
+    },
+    {
+      "question": "Classical entrepreneurship MOST commonly involves:",
+      "options": [
+        "A. Independent SMEs such as bakeries, poultry farms, and fashion houses",
+        "B. Innovation within large corporations",
+        "C. Solving social problems through non-profit ventures",
+        "D. Leveraging AI and digital platforms for global reach"
+      ],
+      "answer": "A. Independent SMEs such as bakeries, poultry farms, and fashion houses",
+      "explanation": "Classical entrepreneurship refers to traditional business creation — typically small or medium enterprises focused on profit, market competition, and sustainability."
+    },
+    {
+      "question": "Corporate entrepreneurship is also known as:",
+      "options": [
+        "A. Social entrepreneurship",
+        "B. Digital entrepreneurship",
+        "C. Intrapreneurship",
+        "D. Classical entrepreneurship"
+      ],
+      "answer": "C. Intrapreneurship",
+      "explanation": "Intrapreneurship refers to innovation that occurs within existing organizations — employees acting entrepreneurially to drive renewal and competitive advantage."
+    },
+    {
+      "question": "Which Nigerian company is cited as an example of corporate entrepreneurship (intrapreneurship) through diversification?",
+      "options": [
+        "A. Dangote Group, which began with cement and expanded into diverse industries",
+        "B. Nollywood, which began with films and expanded into music",
+        "C. Solar Sister, which provides clean energy in rural areas",
+        "D. FarmCrowdy, a digital agriculture startup"
+      ],
+      "answer": "A. Dangote Group, which began with cement and expanded into diverse industries",
+      "explanation": "Dangote Group is the primary Nigerian example of corporate/intrapreneurial expansion — beginning with cement and growing into sugar, flour, oil, and other sectors."
+    },
+    {
+      "question": "Social entrepreneurship focuses primarily on:",
+      "options": [
+        "A. Maximizing shareholder profit above all other objectives",
+        "B. Leveraging technology to reach global markets quickly",
+        "C. Solving societal problems with an emphasis on social value creation and community empowerment",
+        "D. Creating quality-controlled products in manufacturing industries"
+      ],
+      "answer": "C. Solving societal problems with an emphasis on social value creation and community empowerment",
+      "explanation": "Social entrepreneurship addresses societal problems — education, health, clean energy — with focus on social value, sustainability, and community empowerment, not just profit."
+    },
+    {
+      "question": "Flutterwave and Andela are cited as examples of which type of entrepreneurship?",
+      "options": [
+        "A. Classical entrepreneurship",
+        "B. Social entrepreneurship",
+        "C. Corporate entrepreneurship",
+        "D. Digital entrepreneurship"
+      ],
+      "answer": "D. Digital entrepreneurship",
+      "explanation": "Flutterwave, Andela, and FarmCrowdy are Nigerian digital startups that leverage technology and digital platforms — classic examples of digital entrepreneurship."
+    },
+    {
+      "question": "The entrepreneurial process is described as:",
+      "options": [
+        "A. A rigid, linear sequence that must be followed in strict order",
+        "B. A continuous, non-linear cycle characterized by feedback-driven iterations",
+        "C. A one-time event that concludes once the business is launched",
+        "D. A government-mandated procedure for business registration"
+      ],
+      "answer": "B. A continuous, non-linear cycle characterized by feedback-driven iterations",
+      "explanation": "The entrepreneurial process is explicitly described as continuous and non-linear — entrepreneurs frequently revisit earlier stages based on new information, market changes, or failures."
+    },
+    {
+      "question": "What is the CORRECT order of the six-stage entrepreneurial process?",
+      "options": [
+        "A. Implementation → Resource Mobilization → Opportunity Recognition → Growth → Idea Development → Evaluation",
+        "B. Opportunity Recognition → Idea Development → Resource Mobilization → Implementation → Growth → Evaluation"
+      ],
+      "answer": "B. Opportunity Recognition → Idea Development → Resource Mobilization → Implementation → Growth → Evaluation",
+      "explanation": "The slides list the six stages in order: Opportunity Recognition → Idea Development → Resource Mobilization → Implementation → Growth → Evaluation."
+    },
+    {
+      "question": "Which barrier to entrepreneurship is addressed by microfinance, crowdfunding, and angel investors?",
+      "options": [
+        "A. Financial constraints — lack of access to capital",
+        "B. Regulatory challenges — complex bureaucratic systems",
+        "C. Cultural barriers — gender bias and cultural norms",
+        "D. Skill gaps — lack of entrepreneurial education"
+      ],
+      "answer": "A. Financial constraints — lack of access to capital",
+      "explanation": "Microfinance, crowdfunding, and angel investors are solutions specifically listed for the financial barrier — lack of access to capital."
+    },
+    {
+      "question": "Which of the following is listed as an example of digital entrepreneurship in Africa?",
+      "options": [
+        "A. Solar Sister providing clean energy to rural communities",
+        "B. Dangote Group's cement business",
+        "C. Jumia, Africa's largest e-commerce platform",
+        "D. Leap Africa promoting youth-led social ventures"
+      ],
+      "answer": "C. Jumia, Africa's largest e-commerce platform",
+      "explanation": "Jumia is explicitly listed as an example of digital entrepreneurship, described as Africa's largest e-commerce platform connecting millions of buyers and sellers."
+    }
+  ]
+}
