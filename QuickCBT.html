@@ -1,131 +1,1043 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBT Pro Engine</title>
+    <title>CBT Pro Engine — Ultimate Assessment Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        .nav-scroll::-webkit-scrollbar { height: 6px; }
-        .nav-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .correct { background: #dcfce7 !important; border-color: #22c55e !important; }
-        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Custom animations */
+        @keyframes pulse-red {
+            0%, 100% { background-color: rgba(239, 68, 68, 0.1); border-color: rgb(239, 68, 68); }
+            50% { background-color: rgba(239, 68, 68, 0.25); border-color: rgb(220, 38, 38); }
+        }
+        .urgent-timer {
+            animation: pulse-red 1s infinite;
+        }
+        canvas#confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen p-4 md:p-8">
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col antialiased">
 
-    <div id="home-view" class="max-w-2xl mx-auto bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
-        <h1 class="text-3xl font-extrabold text-slate-900 mb-6">CBT Engine</h1>
-        <textarea id="json-input" class="w-full h-64 p-4 border border-slate-200 rounded-xl font-mono text-xs bg-slate-50 focus:ring-2 ring-blue-500 outline-none" placeholder='Paste your JSON (e.g., {"title":"ENT 211","questions":[...]})'></textarea>
-        
-        <div class="grid grid-cols-2 gap-4 mt-6">
-            <input type="number" id="q-limit" placeholder="Questions (e.g. 10)" class="border p-3 rounded-xl w-full">
-            <select id="mode" class="border p-3 rounded-xl bg-white">
-                <option value="practice">Practice Mode</option>
-                <option value="study">Study Mode</option>
-            </select>
+    <!-- Confetti canvas for Study mode celebrations -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-950/60 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                </div>
+                <div>
+                    <span class="font-extrabold text-lg bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">CBT Pro Engine</span>
+                    <span class="text-xs text-indigo-400 block -mt-1 font-semibold tracking-wider uppercase">Enterprise Exam Sandbox</span>
+                </div>
+            </div>
+            
+            <div id="active-header-meta" class="hidden flex items-center gap-4">
+                <div id="test-timer" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/80 text-sm font-semibold text-slate-300">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span id="timer-label" class="mono text-indigo-400 font-bold">Untimed</span>
+                </div>
+                <button onclick="confirmSubmit()" class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 font-bold text-xs shadow-md tracking-wider uppercase transition-all duration-150">
+                    Finish Test
+                </button>
+            </div>
         </div>
+    </header>
 
-        <div class="flex items-center gap-6 mt-4">
-            <label class="flex items-center gap-2"><input type="checkbox" id="shuffle"> Shuffle</label>
-            <label class="flex items-center gap-2"><input type="checkbox" id="use-timer" onchange="toggleTimer()"> Use Timer</label>
-            <input type="number" id="timer-val" placeholder="Seconds" class="border p-2 rounded-lg w-24 hidden">
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
+
+        <!-- SETUP / HOME VIEW -->
+        <section id="home-view" class="max-w-4xl w-full mx-auto space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Config Card -->
+                <div class="lg:col-span-5 bg-slate-950/40 border border-slate-800/80 p-6 rounded-3xl space-y-5 backdrop-blur-md">
+                    <div>
+                        <h2 class="text-xl font-bold text-white mb-1">Configuration Panel</h2>
+                        <p class="text-xs text-slate-400">Design your test environment variables</p>
+                    </div>
+
+                    <!-- Mode Select -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-300 tracking-wide uppercase block">Assessment Mode</label>
+                        <div class="grid grid-cols-2 gap-2 bg-slate-900/60 p-1 rounded-xl border border-slate-800/60">
+                            <button id="btn-mode-study" onclick="setMode('study')" class="py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-600/10">
+                                Study Mode
+                            </button>
+                            <button id="btn-mode-practice" onclick="setMode('practice')" class="py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/40">
+                                Practice Mode
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Config Toggles -->
+                    <div class="space-y-4 pt-2">
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/40 border border-slate-800/40">
+                            <div class="flex items-center gap-3">
+                                <span class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.21" />
+                                    </svg>
+                                </span>
+                                <div>
+                                    <span class="text-xs font-bold text-white block">Shuffle Elements</span>
+                                    <span class="text-[10px] text-slate-400 block">Randomize questions/options order</span>
+                                </div>
+                            </div>
+                            <input type="checkbox" id="shuffle" checked class="w-10 h-5 bg-slate-800 checked:bg-indigo-600 rounded-full appearance-none relative before:content-[''] before:absolute before:h-4 before:w-4 before:bg-slate-400 checked:before:bg-white before:rounded-full before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-transform duration-200 cursor-pointer">
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/40 border border-slate-800/40">
+                            <div class="flex items-center gap-3">
+                                <span class="p-2 rounded-lg bg-rose-500/10 text-rose-400">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </span>
+                                <div>
+                                    <span class="text-xs font-bold text-white block">Active Timer</span>
+                                    <span class="text-[10px] text-slate-400 block">Cap session with countdown limit</span>
+                                </div>
+                            </div>
+                            <input type="checkbox" id="use-timer" onchange="toggleTimerInput()" class="w-10 h-5 bg-slate-800 checked:bg-indigo-600 rounded-full appearance-none relative before:content-[''] before:absolute before:h-4 before:w-4 before:bg-slate-400 checked:before:bg-white before:rounded-full before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-transform duration-200 cursor-pointer">
+                        </div>
+
+                        <!-- Timer Setting Section -->
+                        <div id="timer-config-wrapper" class="hidden space-y-2 p-3 bg-slate-900/40 border border-slate-800/40 rounded-xl transition-all duration-300">
+                            <label class="text-xs font-bold text-slate-300 tracking-wide uppercase block">Timer Limit (Minutes)</label>
+                            <input type="number" id="timer-val" placeholder="Default: 10 Minutes" min="1" class="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 font-medium focus:ring-2 ring-indigo-500 outline-none text-sm">
+                        </div>
+
+                        <!-- Question Limit -->
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-slate-300 tracking-wide uppercase block">Question Limit</label>
+                            <input type="number" id="q-limit" placeholder="Leave empty for all questions" min="1" class="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 font-medium focus:ring-2 ring-indigo-500 outline-none text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Database Input -->
+                <div class="lg:col-span-7 bg-slate-950/40 border border-slate-800/80 p-6 rounded-3xl flex flex-col justify-between backdrop-blur-md">
+                    <div class="space-y-3 flex-1 flex flex-col">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-xl font-bold text-white">Database Loader</h2>
+                                <p class="text-xs text-slate-400">Load test configurations dynamically (supports relaxed JSON/JS objects)</p>
+                            </div>
+                            <button onclick="restoreDefaults()" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors">Load ENT 211 Questions</button>
+                        </div>
+                        <textarea id="json-input" class="w-full flex-1 min-h-[300px] p-4 border border-slate-800 rounded-2xl font-mono text-xs bg-slate-950/60 focus:ring-2 ring-indigo-500 outline-none text-indigo-300/90 leading-relaxed scrollbar" placeholder="Paste database schema here..."></textarea>
+                    </div>
+
+                    <button onclick="startTest()" class="w-full mt-6 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold py-4 rounded-xl shadow-xl shadow-indigo-600/10 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                        <span>Launch CBT Engine</span>
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIN CBT INTERFACE -->
+        <section id="cbt-view" class="hidden w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- Left Panel: Core Quiz Block -->
+            <div class="lg:col-span-8 bg-slate-950/40 border border-slate-800/80 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl backdrop-blur-md">
+                
+                <!-- Progress Header -->
+                <div class="flex items-center justify-between">
+                    <div class="space-y-1">
+                        <span id="q-category-badge" class="px-2.5 py-1 text-[10px] uppercase tracking-wider bg-indigo-500/10 text-indigo-400 rounded-md font-extrabold border border-indigo-500/20">Module Concept</span>
+                        <h2 id="q-heading" class="text-white font-extrabold text-2xl tracking-tight mt-1"></h2>
+                    </div>
+                    
+                    <button id="flag-btn" onclick="toggleFlag()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-800/60 transition-colors">
+                        <svg class="w-4 h-4 text-slate-400" id="flag-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                        </svg>
+                        <span class="text-xs font-semibold text-slate-300">Flag question</span>
+                    </button>
+                </div>
+
+                <!-- Custom Progress Bar -->
+                <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                    <div id="cbt-progress-fill" class="bg-indigo-500 h-full transition-all duration-300 rounded-full" style="width: 0%"></div>
+                </div>
+
+                <!-- Active Question Text -->
+                <p id="q-text" class="text-lg md:text-xl font-semibold text-slate-100 leading-relaxed min-h-[50px]"></p>
+
+                <!-- Options List (Rendered Safely) -->
+                <div id="options" class="grid grid-cols-1 gap-3.5"></div>
+
+                <!-- Active Feedback Box (Only for Study Mode) -->
+                <div id="study-feedback-box" class="hidden transition-all duration-300 rounded-2xl overflow-hidden border">
+                    <div class="p-5 flex gap-4 items-start">
+                        <div id="feedback-icon-wrapper" class="p-2.5 rounded-xl flex items-center justify-center"></div>
+                        <div>
+                            <h4 id="feedback-title" class="font-extrabold text-base mb-1"></h4>
+                            <p id="feedback-text" class="text-sm leading-relaxed text-slate-300"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigator Bar -->
+                <div class="flex items-center justify-between pt-6 border-t border-slate-800/60">
+                    <button onclick="changeQ(-1)" class="px-5 py-3 rounded-xl border border-slate-800 hover:bg-slate-800 text-slate-300 font-bold text-sm tracking-wide transition-colors">
+                        Previous
+                    </button>
+                    <button onclick="changeQ(1)" class="px-7 py-3 rounded-xl bg-slate-100 hover:bg-white text-slate-950 font-bold text-sm tracking-wide transition-all shadow-md shadow-slate-100/10">
+                        Next Question
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Navigation Grid Sidebar -->
+            <div class="lg:col-span-4 bg-slate-950/40 border border-slate-800/80 rounded-3xl p-6 space-y-6 shadow-2xl backdrop-blur-md sticky top-24">
+                <div>
+                    <h3 class="text-base font-extrabold text-white">Quiz Directory</h3>
+                    <p class="text-xs text-slate-400">Jump and cycle through questions</p>
+                </div>
+
+                <!-- Grid -->
+                <div id="nav-strip" class="grid grid-cols-5 md:grid-cols-6 lg:grid-cols-5 gap-2.5 max-h-[300px] overflow-y-auto pr-1 scrollbar"></div>
+
+                <div class="border-t border-slate-800/60 pt-4 space-y-3.5">
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px] font-bold text-slate-400">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded bg-indigo-600/30 border border-indigo-500"></span>
+                            <span>Answered</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded bg-amber-500/20 border border-amber-500"></span>
+                            <span>Flagged</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded bg-slate-800 border border-slate-700"></span>
+                            <span>Unvisited</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded ring-2 ring-white bg-indigo-600"></span>
+                            <span>Current</span>
+                        </div>
+                    </div>
+
+                    <button onclick="confirmSubmit()" class="w-full mt-2 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-extrabold py-3.5 rounded-xl text-sm shadow-lg tracking-wider uppercase transition-all duration-200">
+                        Finish & Submit Exam
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- COMPREHENSIVE PERFORMANCE RESULTS VIEW -->
+        <section id="results-view" class="hidden w-full max-w-4xl mx-auto space-y-6">
+            <!-- Summary Core Card -->
+            <div class="bg-slate-950/40 border border-slate-800/80 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-2xl">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+                    
+                    <!-- Left: Progress Circle Representation -->
+                    <div class="md:col-span-5 flex flex-col items-center justify-center text-center space-y-4">
+                        <div class="relative h-44 w-44 flex items-center justify-center">
+                            <!-- SVG Progress Ring -->
+                            <svg class="absolute transform -rotate-90 w-full h-full">
+                                <circle cx="88" cy="88" r="76" stroke-width="12" stroke="#1e293b" fill="transparent" />
+                                <circle id="result-ring-fill" cx="88" cy="88" r="76" stroke-width="12" stroke="url(#indigoGrad)" fill="transparent" stroke-dasharray="477" stroke-dashoffset="477" stroke-linecap="round" class="transition-all duration-1000 ease-out" />
+                                <defs>
+                                    <linearGradient id="indigoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#6366f1" />
+                                        <stop offset="100%" stop-color="#a855f7" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="text-center z-10 space-y-0.5">
+                                <span id="result-percentage" class="text-4xl md:text-5xl font-extrabold text-white tracking-tighter">0%</span>
+                                <span class="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest block">Accuracy</span>
+                            </div>
+                        </div>
+                        <div id="result-rating-badge" class="px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider"></div>
+                    </div>
+
+                    <!-- Right: Dynamic stats grid -->
+                    <div class="md:col-span-7 space-y-6">
+                        <div>
+                            <h2 class="text-2xl font-extrabold text-white tracking-tight">Assessment Scorecard</h2>
+                            <p class="text-xs text-slate-400">Analytics overview of performance variables</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-slate-900/40 border border-slate-800/50 p-4 rounded-2xl flex items-center gap-4">
+                                <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-slate-400 block font-medium">Correct</span>
+                                    <span id="stat-correct" class="text-2xl font-extrabold text-white leading-none">0</span>
+                                endTest</div>
+                            </div>
+
+                            <div class="bg-slate-900/40 border border-slate-800/50 p-4 rounded-2xl flex items-center gap-4">
+                                <div class="p-3 bg-red-500/10 text-red-400 rounded-xl">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-slate-400 block font-medium">Wrong</span>
+                                    <span id="stat-wrong" class="text-2xl font-extrabold text-white leading-none">0</span>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900/40 border border-slate-800/50 p-4 rounded-2xl flex items-center gap-4">
+                                <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-slate-400 block font-medium">Skipped</span>
+                                    <span id="stat-skipped" class="text-2xl font-extrabold text-white leading-none">0</span>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900/40 border border-slate-800/50 p-4 rounded-2xl flex items-center gap-4">
+                                <div class="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-slate-400 block font-medium">Time Used</span>
+                                    <span id="stat-time" class="text-lg font-extrabold text-white tracking-tight">00:00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <button onclick="restartTest()" class="flex-1 py-4 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-extrabold rounded-xl text-sm shadow-xl tracking-wider uppercase transition-all duration-150">
+                                Try Another Session
+                            </button>
+                            <button onclick="toggleDetailedAnalysis()" class="px-6 py-4 rounded-xl border border-slate-800 hover:bg-slate-800 text-slate-300 font-extrabold text-sm tracking-wide transition-colors">
+                                Review Answers
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed review dropdown dynamic list -->
+            <div id="detailed-analysis-card" class="hidden space-y-4">
+                <h3 class="text-lg font-extrabold text-white">Question Review Sheet</h3>
+                <div id="review-list" class="space-y-4"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Custom Modal Confirm Dialog -->
+    <div id="modal-container" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-800 max-w-md w-full rounded-3xl p-6 space-y-6 shadow-2xl scale-95 transform transition-transform duration-200">
+            <div class="flex gap-4 items-start">
+                <div class="p-3 bg-rose-500/10 text-rose-400 rounded-2xl">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-lg font-bold text-white">Submit CBT Assessment?</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">You have completed <span id="modal-answered-count" class="font-bold text-indigo-400">0</span> out of <span id="modal-total-count" class="font-bold text-white">0</span> questions. Are you sure you want to end the test?</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeModal()" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors">
+                    No, Resume
+                </button>
+                <button onclick="submitExam()" class="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors shadow-lg shadow-rose-600/10">
+                    Yes, Submit
+                </button>
+            </div>
         </div>
-
-        <button onclick="startTest()" class="w-full mt-8 bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 shadow-lg">Launch Test</button>
     </div>
 
-    <div id="cbt-view" class="max-w-3xl mx-auto bg-white p-8 rounded-3xl shadow-xl hidden">
-        <div class="flex justify-between items-center mb-6">
-            <h2 id="q-title" class="font-bold text-lg text-slate-700"></h2>
-            <div id="timer-display" class="font-mono font-bold text-red-600"></div>
-        </div>
-        
-        <div id="nav-strip" class="flex gap-2 overflow-x-auto pb-4 nav-scroll mb-6 border-b"></div>
-        
-        <p id="q-text" class="text-xl font-medium mb-8 min-h-[60px]"></p>
-        <div id="options" class="space-y-3"></div>
-
-        <div class="flex justify-between mt-10 pt-6 border-t">
-            <button onclick="changeQ(-1)" class="text-slate-500 font-bold">Previous</button>
-            <button onclick="changeQ(1)" class="bg-slate-900 text-white px-8 py-3 rounded-xl">Next</button>
-        </div>
-    </div>
-
+    <!-- Pre-populated raw ENT 211 Questions Database -->
     <script>
-        let data, currentIdx = 0, userAnswers = [], timerInterval, timeLeft;
+        const fallbackDatabase = {
+            title: "ENT 211 — 200 MCQ Database Selection",
+            questions: [
+                {
+                    question: "Which of the following BEST defines entrepreneurship according to Stevenson & Jarillo (1990)?",
+                    options: [
+                        "A. The management of existing resources within a company",
+                        "B. The pursuit of opportunities beyond the resources currently controlled",
+                        "C. The process of buying and reselling goods for profit",
+                        "D. The act of investing in government bonds"
+                    ],
+                    "answer": "B. The pursuit of opportunities beyond the resources currently controlled",
+                    "explanation": "Stevenson & Jarillo's definition emphasizes the proactive, resourceful, and risk-bearing nature of entrepreneurship — pursuing opportunity regardless of current resource constraints."
+                },
+                {
+                    "question": "Joseph Schumpeter (1934) described entrepreneurs as agents of \"creative destruction.\" What does this mean?",
+                    "options": [
+                        "A. Entrepreneurs physically destroy old factories to build new ones",
+                        "B. Entrepreneurs create charities that destroy poverty",
+                        "C. Entrepreneurs disrupt existing markets with new products and processes, making old ones obsolete",
+                        "D. Entrepreneurs destroy competition through aggressive pricing"
+                    ],
+                    "answer": "C. Entrepreneurs disrupt existing markets with new products and processes, making old ones obsolete",
+                    "explanation": "Schumpeter's \"creative destruction\" means innovation displaces existing markets and technologies — new ideas replace the old, driving economic progress."
+                },
+                {
+                    "question": "Peter Drucker (1985) argued that entrepreneurship is primarily:",
+                    "options": [
+                        "A. A discipline based on systematic innovation and opportunity recognition, not a personality trait",
+                        "B. An innate personality trait present only in naturally gifted individuals",
+                        "C. A government-supported activity requiring official licensing",
+                        "D. Exclusively about starting new companies in emerging markets"
+                    ],
+                    "answer": "A. A discipline based on systematic innovation and opportunity recognition, not a personality trait",
+                    "explanation": "Drucker's behavioral perspective emphasized that entrepreneurship can be learned and practiced systematically — it is a discipline, not merely a trait."
+                },
+                {
+                    "question": "Which Nigerian industry is cited in the slides as a prime example of entrepreneurship driven by creativity despite limited infrastructure?",
+                    "options": [
+                        "A. The Nigerian oil and gas sector",
+                        "B. Nollywood — the Nigerian film industry",
+                        "C. The Lagos real estate market",
+                        "D. Kano textile manufacturing"
+                    ],
+                    "answer": "B. Nollywood — the Nigerian film industry",
+                    "explanation": "Nollywood is highlighted as an example of entrepreneurship driven by creativity and resourcefulness in Nigeria, now one of the largest film industries in the world."
+                },
+                {
+                    "question": "Which myth about entrepreneurship states that only the wealthy can start businesses?",
+                    "options": [
+                        "A. Myth 1 — Entrepreneurs are born, not made",
+                        "B. Myth 2 — Entrepreneurship is only about trading",
+                        "C. Myth 3 — Only the wealthy can start businesses",
+                        "D. Myth 5 — Failure is permanent"
+                    ],
+                    "answer": "C. Myth 3 — Only the wealthy can start businesses",
+                    "explanation": "Myth 3 conflates entrepreneurship with wealth. The reality is that capital can be sourced creatively through microfinance, crowdfunding, or angel investors."
+                }
+            ]
+        };
 
-        function toggleTimer() {
-            document.getElementById('timer-val').classList.toggle('hidden', !document.getElementById('use-timer').checked);
+        // Write the raw initial schema directly into the loader box on document load
+        document.getElementById('json-input').value = JSON.stringify(fallbackDatabase, null, 2);
+    </script>
+
+    <!-- Main Logic Core System -->
+    <script>
+        let rawData = [];
+        let data = [];
+        let currentIdx = 0;
+        let userAnswers = []; // Maps target Question Index to option Index chosen (e.g. 0, 1, 2) or null
+        let flaggedQuestions = []; // Array of booleans
+        let solvedState = []; // Track study mode state. Once solved, option interactions are locked
+        
+        let timerInterval;
+        let testMode = "study"; // "study" or "practice"
+        let limitVal = null;
+        
+        // Timer Variables
+        let timerSecondsLeft = 0;
+        let timerDurationAllocated = 0; // tracking total allocated time
+
+        function restoreDefaults() {
+            // Restore default configuration view with formatted schema representation
+            document.getElementById('json-input').value = JSON.stringify(fallbackDatabase, null, 2);
+        }
+
+        function setMode(mode) {
+            testMode = mode;
+            const studyBtn = document.getElementById('btn-mode-study');
+            const practiceBtn = document.getElementById('btn-mode-practice');
+            
+            if(mode === 'study') {
+                studyBtn.className = "py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-600/10";
+                practiceBtn.className = "py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/40";
+            } else {
+                practiceBtn.className = "py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-600/10";
+                studyBtn.className = "py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/40";
+            }
+        }
+
+        function toggleTimerInput() {
+            const hasTimer = document.getElementById('use-timer').checked;
+            document.getElementById('timer-config-wrapper').style.display = hasTimer ? 'block' : 'none';
         }
 
         function startTest() {
             try {
-                const raw = JSON.parse(document.getElementById('json-input').value);
-                data = raw.questions;
-                if(document.getElementById('shuffle').checked) data.sort(() => Math.random() - 0.5);
-                data = data.slice(0, document.getElementById('q-limit').value || data.length);
+                const textInput = document.getElementById('json-input').value.trim();
+                let parsed;
+
+                try {
+                    // Try parsing strictly first
+                    parsed = JSON.parse(textInput);
+                } catch (strictError) {
+                    // Fall back to lenient JS parser function to support loose, unquoted keys, and single quotes
+                    parsed = new Function(`return (${textInput});`)();
+                }
                 
-                userAnswers = new Array(data.length).fill(null);
-                currentIdx = 0;
-                
-                if(document.getElementById('use-timer').checked) {
-                    timeLeft = parseInt(document.getElementById('timer-val').value);
-                    startTimer();
+                if (!parsed.questions || !Array.isArray(parsed.questions)) {
+                    showCustomMessage("Configuration Error", "Make sure your database has a valid 'questions' array inside.", true);
+                    return;
                 }
 
+                rawData = [...parsed.questions];
+                data = [...rawData];
+
+                // Shuffle Question / Options Array Order
+                if (document.getElementById('shuffle').checked) {
+                    data.sort(() => Math.random() - 0.5);
+                    data.forEach(q => {
+                        if(q.options && Array.isArray(q.options)) {
+                            // Shuffling in place
+                            q.options.sort(() => Math.random() - 0.5);
+                        }
+                    });
+                }
+
+                // Question Limit Filter
+                const limitInputVal = parseInt(document.getElementById('q-limit').value);
+                if (limitInputVal && limitInputVal > 0) {
+                    data = data.slice(0, limitInputVal);
+                }
+
+                // Reset States
+                userAnswers = new Array(data.length).fill(null);
+                flaggedQuestions = new Array(data.length).fill(false);
+                solvedState = new Array(data.length).fill(false);
+                currentIdx = 0;
+
+                // Handle Timer logic
+                const hasTimer = document.getElementById('use-timer').checked;
+                const timerValInput = parseInt(document.getElementById('timer-val').value);
+                
+                if(hasTimer) {
+                    const durationMins = (timerValInput && timerValInput > 0) ? timerValInput : 10;
+                    timerSecondsLeft = durationMins * 60;
+                    timerDurationAllocated = timerSecondsLeft;
+                    runTimerSystem();
+                } else {
+                    document.getElementById('timer-label').innerText = "Practice Sandbox";
+                    document.getElementById('test-timer').className = "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/80 text-sm font-semibold text-slate-300";
+                }
+
+                // UI Changes
                 document.getElementById('home-view').classList.add('hidden');
+                document.getElementById('active-header-meta').classList.remove('hidden');
                 document.getElementById('cbt-view').classList.remove('hidden');
-                renderNav();
-                loadQ();
-            } catch { alert("Check JSON Syntax"); }
+
+                // Render first Q & Side Navigation Grid
+                loadQuestion();
+                renderNavDirectory();
+
+            } catch (err) {
+                showCustomMessage("Parser Error", "Ensure braces, brackets, and quotes are strictly balanced.", true);
+            }
         }
 
-        function startTimer() {
-            const display = document.getElementById('timer-display');
+        function runTimerSystem() {
+            clearInterval(timerInterval);
+            const label = document.getElementById('timer-label');
+            
+            const updateUI = () => {
+                const mins = Math.floor(timerSecondsLeft / 60);
+                const secs = timerSecondsLeft % 60;
+                const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                label.innerText = formatted;
+
+                const timerBox = document.getElementById('test-timer');
+                if (timerSecondsLeft <= 30) {
+                    timerBox.classList.add('urgent-timer', 'text-red-500');
+                    timerBox.classList.remove('text-slate-300');
+                } else {
+                    timerBox.classList.remove('urgent-timer', 'text-red-500');
+                    timerBox.classList.add('text-slate-300');
+                }
+            };
+
+            updateUI();
+
             timerInterval = setInterval(() => {
-                timeLeft--;
-                display.innerText = timeLeft + "s";
-                if(timeLeft <= 0) { clearInterval(timerInterval); alert("Time Up!"); endTest(); }
+                timerSecondsLeft--;
+                updateUI();
+
+                if (timerSecondsLeft <= 0) {
+                    clearInterval(timerInterval);
+                    showCustomMessage("Session Complete", "Time is up! Your responses are automatically being processed.", false);
+                    submitExam();
+                }
             }, 1000);
         }
 
-        function renderNav() {
-            document.getElementById('nav-strip').innerHTML = data.map((_, i) => `
-                <button onclick="jumpTo(${i})" class="px-4 py-2 bg-slate-100 rounded-lg min-w-[40px] font-bold ${i===currentIdx?'bg-blue-600 text-white':''}">${i+1}</button>
-            `).join('');
-        }
-
-        function loadQ() {
+        function loadQuestion() {
             const q = data[currentIdx];
+            
+            // Set dynamic header text layout
+            document.getElementById('q-category-badge').innerText = `Question ${currentIdx + 1} of ${data.length}`;
+            document.getElementById('q-heading').innerText = `Select the Correct Concept`;
             document.getElementById('q-text').innerText = q.question;
-            document.getElementById('options').innerHTML = q.options.map(opt => `
-                <button onclick="select('${opt.replace(/'/g, "\\'")}', '${q.answer.replace(/'/g, "\\'")}')" 
-                        class="w-full text-left p-4 border rounded-xl hover:bg-slate-50 ${userAnswers[currentIdx] === opt ? 'bg-blue-100 border-blue-400' : ''}">
-                    ${opt}
-                </button>
-            `).join('');
-            renderNav();
+
+            // Manage progress bar percentage fill
+            const percentFilled = ((currentIdx + 1) / data.length) * 100;
+            document.getElementById('cbt-progress-fill').style.width = `${percentFilled}%`;
+
+            // Reset study feedback box view state
+            const feedbackBox = document.getElementById('study-feedback-box');
+            feedbackBox.classList.add('hidden');
+
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+
+            // Render Flag Status styling
+            const flagIcon = document.getElementById('flag-icon');
+            const isFlagged = flaggedQuestions[currentIdx];
+            if (isFlagged) {
+                flagIcon.setAttribute('fill', '#f59e0b');
+                flagIcon.setAttribute('stroke', '#f59e0b');
+            } else {
+                flagIcon.setAttribute('fill', 'none');
+                flagIcon.setAttribute('stroke', 'currentColor');
+            }
+
+            // Options list representation generator
+            q.options.forEach((opt, idx) => {
+                const button = document.createElement('button');
+                button.className = "w-full text-left p-4 rounded-xl border font-semibold text-sm transition-all duration-150 flex items-center justify-between ";
+
+                const isSelected = userAnswers[currentIdx] === idx;
+
+                if (testMode === 'study') {
+                    const isSolved = solvedState[currentIdx];
+                    
+                    if (isSolved) {
+                        const correctIdx = getCorrectOptionIndex(q);
+                        if (idx === correctIdx) {
+                            button.className += "bg-emerald-500/10 border-emerald-500 text-emerald-300";
+                            button.innerHTML = `<span>${opt}</span><span class="text-emerald-500 font-extrabold flex items-center gap-1">Correct ✔</span>`;
+                        } else if (isSelected) {
+                            button.className += "bg-rose-500/10 border-rose-500 text-rose-300";
+                            button.innerHTML = `<span>${opt}</span><span class="text-rose-500 font-extrabold">Incorrect ✖</span>`;
+                        } else {
+                            button.className += "bg-slate-900/40 border-slate-800 text-slate-500 cursor-not-allowed";
+                            button.innerHTML = `<span>${opt}</span>`;
+                        }
+                    } else {
+                        // Standard Unsolved Options
+                        button.className += "bg-slate-900/60 border-slate-800 hover:border-indigo-500/80 hover:bg-slate-800/40 text-slate-200";
+                        button.innerHTML = `<span>${opt}</span>`;
+                        button.onclick = () => selectOption(idx);
+                    }
+
+                } else {
+                    // Practice Mode styling (simple selection feedback, no inline evaluation)
+                    if (isSelected) {
+                        button.className += "bg-indigo-500/10 border-indigo-500 text-indigo-300 shadow-md shadow-indigo-500/5";
+                        button.innerHTML = `<span>${opt}</span><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>`;
+                    } else {
+                        button.className += "bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-800/40 text-slate-200";
+                        button.innerHTML = `<span>${opt}</span>`;
+                    }
+                    button.onclick = () => selectOption(idx);
+                }
+
+                optionsContainer.appendChild(button);
+            });
+
+            // Reveal explanation if evaluated in study mode
+            if (testMode === 'study' && solvedState[currentIdx]) {
+                revealExplanation(q);
+            }
         }
 
-        function select(choice, correct) {
-            userAnswers[currentIdx] = choice;
-            if(document.getElementById('mode').value === 'study') {
-                alert(choice === correct ? "Correct! ✨" : "Wrong! The answer is " + correct);
+        // Helper: Matches text content or dynamic key index of the options array to correct answer string
+        function getCorrectOptionIndex(q) {
+            let correctIdx = 0;
+            q.options.forEach((opt, idx) => {
+                // Check if option value matches correct answer string strictly
+                if (opt.trim() === q.answer.trim()) {
+                    correctIdx = idx;
+                }
+                // Fallback check: matches starting prefix e.g., 'A' instead of 'A. ...'
+                else if (q.answer.trim().length === 1 && opt.trim().startsWith(q.answer.trim())) {
+                    correctIdx = idx;
+                }
+            });
+            return correctIdx;
+        }
+
+        function selectOption(optionIndex) {
+            const q = data[currentIdx];
+            userAnswers[currentIdx] = optionIndex;
+
+            if (testMode === 'study') {
+                solvedState[currentIdx] = true;
+                const correctIdx = getCorrectOptionIndex(q);
+
+                if (optionIndex === correctIdx) {
+                    triggerConfettiSparkle();
+                }
             }
-            loadQ();
+
+            loadQuestion();
+            renderNavDirectory();
+        }
+
+        function revealExplanation(q) {
+            const feedbackBox = document.getElementById('study-feedback-box');
+            const iconWrapper = document.getElementById('feedback-icon-wrapper');
+            const title = document.getElementById('feedback-title');
+            const text = document.getElementById('feedback-text');
+
+            const isCorrect = userAnswers[currentIdx] === getCorrectOptionIndex(q);
+
+            if (isCorrect) {
+                feedbackBox.className = "transition-all duration-300 rounded-2xl overflow-hidden border border-emerald-500/20 bg-emerald-950/20";
+                iconWrapper.className = "p-2.5 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-400";
+                iconWrapper.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4" /></svg>`;
+                title.innerText = "Excellent Work! ✨";
+                title.className = "font-extrabold text-base mb-1 text-emerald-400";
+            } else {
+                feedbackBox.className = "transition-all duration-300 rounded-2xl overflow-hidden border border-rose-500/20 bg-rose-950/20";
+                iconWrapper.className = "p-2.5 rounded-xl flex items-center justify-center bg-rose-500/10 text-rose-400";
+                iconWrapper.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`;
+                title.innerText = "Concept Review Required 🔍";
+                title.className = "font-extrabold text-base mb-1 text-rose-400";
+            }
+
+            text.innerText = q.explanation || "No explanation provided in exam database. Review lecture slides for deep concept variables.";
+            feedbackBox.classList.remove('hidden');
+        }
+
+        function renderNavDirectory() {
+            const container = document.getElementById('nav-strip');
+            container.innerHTML = data.map((_, i) => {
+                let badgeClass = "bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700";
+                
+                if (userAnswers[i] !== null) {
+                    badgeClass = "bg-indigo-600/20 border-indigo-500 text-indigo-300 hover:bg-indigo-600/30";
+                }
+                
+                if (flaggedQuestions[i]) {
+                    badgeClass = "bg-amber-500/20 border-amber-500 text-amber-300 hover:bg-amber-500/30";
+                }
+
+                if (i === currentIdx) {
+                    badgeClass += " ring-2 ring-white scale-105 shadow-lg shadow-indigo-600/20";
+                }
+
+                return `
+                    <button onclick="jumpTo(${i})" class="aspect-square flex items-center justify-center rounded-xl border font-extrabold text-xs transition-all duration-150 ${badgeClass}">
+                        ${i + 1}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function toggleFlag() {
+            flaggedQuestions[currentIdx] = !flaggedQuestions[currentIdx];
+            loadQuestion();
+            renderNavDirectory();
         }
 
         function changeQ(dir) {
             currentIdx = Math.max(0, Math.min(data.length - 1, currentIdx + dir));
-            loadQ();
+            loadQuestion();
+            renderNavDirectory();
         }
 
-        function jumpTo(i) { currentIdx = i; loadQ(); }
+        function jumpTo(i) {
+            currentIdx = i;
+            loadQuestion();
+            renderNavDirectory();
+        }
 
-        function endTest() {
+        function confirmSubmit() {
+            const totalCount = data.length;
+            const answeredCount = userAnswers.filter(ans => ans !== null).length;
+
+            document.getElementById('modal-answered-count').innerText = answeredCount;
+            document.getElementById('modal-total-count').innerText = totalCount;
+            document.getElementById('modal-container').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-container').classList.add('hidden');
+        }
+
+        function submitExam() {
+            closeModal();
             clearInterval(timerInterval);
-            location.reload(); // Simple way to reset state to home
+
+            // Compute Statistics Metrics
+            let correctCount = 0;
+            let wrongCount = 0;
+            let skippedCount = 0;
+
+            data.forEach((q, idx) => {
+                const userChoiceIdx = userAnswers[idx];
+                if (userChoiceIdx === null) {
+                    skippedCount++;
+                } else {
+                    const correctIdx = getCorrectOptionIndex(q);
+                    if (userChoiceIdx === correctIdx) {
+                        correctCount++;
+                    } else {
+                        wrongCount++;
+                    }
+                }
+            });
+
+            // Display values inside the scores grid
+            document.getElementById('stat-correct').innerText = correctCount;
+            document.getElementById('stat-wrong').innerText = wrongCount;
+            document.getElementById('stat-skipped').innerText = skippedCount;
+
+            const accuracyPercent = data.length > 0 ? Math.round((correctCount / data.length) * 100) : 0;
+            document.getElementById('result-percentage').innerText = `${accuracyPercent}%`;
+
+            // SVG DashOffset circular fill mapping adjustment
+            const circleFill = document.getElementById('result-ring-fill');
+            const circumference = 477; // 2 * PI * r (76)
+            const offset = circumference - (accuracyPercent / 100) * circumference;
+            circleFill.style.strokeDashoffset = offset;
+
+            // Rating Badge style modifications
+            const ratingBadge = document.getElementById('result-rating-badge');
+            if(accuracyPercent >= 85) {
+                ratingBadge.innerText = "Mastery Level (Expert)";
+                ratingBadge.className = "px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                triggerConfettiSparkle(1500); 
+            } else if (accuracyPercent >= 65) {
+                ratingBadge.innerText = "Passing Level (Competent)";
+                ratingBadge.className = "px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20";
+            } else {
+                ratingBadge.innerText = "Developing (Needs Review)";
+                ratingBadge.className = "px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20";
+            }
+
+            // Time Tracking Calculations
+            let elapsedFormatted = "Untimed Session";
+            if (timerDurationAllocated > 0) {
+                const elapsedSeconds = timerDurationAllocated - timerSecondsLeft;
+                const m = Math.floor(elapsedSeconds / 60);
+                const s = elapsedSeconds % 60;
+                elapsedFormatted = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            }
+            document.getElementById('stat-time').innerText = elapsedFormatted;
+
+            // Display Results card
+            document.getElementById('cbt-view').classList.add('hidden');
+            document.getElementById('active-header-meta').classList.add('hidden');
+            document.getElementById('results-view').classList.remove('hidden');
+
+            generateReviewSheet();
+        }
+
+        function toggleDetailedAnalysis() {
+            const detailCard = document.getElementById('detailed-analysis-card');
+            detailCard.classList.toggle('hidden');
+            
+            if(!detailCard.classList.contains('hidden')) {
+                detailCard.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function generateReviewSheet() {
+            const list = document.getElementById('review-list');
+            list.innerHTML = '';
+
+            data.forEach((q, idx) => {
+                const userChoiceIdx = userAnswers[idx];
+                const correctIdx = getCorrectOptionIndex(q);
+                const isCorrect = userChoiceIdx === correctIdx;
+                
+                const card = document.createElement('div');
+                card.className = "p-5 rounded-2xl border bg-slate-950/20 space-y-3 ";
+                
+                if (userChoiceIdx === null) {
+                    card.className += "border-slate-800 bg-slate-900/10";
+                } else if (isCorrect) {
+                    card.className += "border-emerald-500/20 bg-emerald-950/5";
+                } else {
+                    card.className += "border-rose-500/20 bg-rose-950/5";
+                }
+
+                let stateHeaderHTML = '';
+                if (userChoiceIdx === null) {
+                    stateHeaderHTML = `<span class="text-amber-500 text-xs font-bold uppercase tracking-wider">● Skipped Question</span>`;
+                } else if (isCorrect) {
+                    stateHeaderHTML = `<span class="text-emerald-500 text-xs font-bold uppercase tracking-wider">✓ Correct Answer</span>`;
+                } else {
+                    stateHeaderHTML = `<span class="text-rose-500 text-xs font-bold uppercase tracking-wider">✖ Incorrect Answer</span>`;
+                }
+
+                const userTextVal = userChoiceIdx !== null ? q.options[userChoiceIdx] : 'None Selected';
+                const correctTextVal = q.options[correctIdx];
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center border-b border-slate-800/60 pb-2">
+                        <span class="text-xs text-slate-400 font-bold uppercase">Question ${idx + 1}</span>
+                        ${stateHeaderHTML}
+                    </div>
+                    <p class="text-sm font-semibold text-white leading-relaxed pt-1">${q.question}</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                        <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 font-bold uppercase block mb-1">Your Selected Option</span>
+                            <span class="text-xs font-medium ${userChoiceIdx === null ? 'text-slate-400 italic' : (isCorrect ? 'text-emerald-400' : 'text-rose-400')}">${userTextVal}</span>
+                        </div>
+                        <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 font-bold uppercase block mb-1">Correct Answer</span>
+                            <span class="text-xs font-medium text-emerald-400">${correctTextVal}</span>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-xl text-xs text-slate-300 leading-relaxed">
+                        <strong class="text-indigo-400 block mb-1 uppercase tracking-wide text-[9px]">Concept Verification Details</strong>
+                        ${q.explanation || 'No structured lecture analysis is attached for this conceptual module.'}
+                    </div>
+                `;
+
+                list.appendChild(card);
+            });
+        }
+
+        function restartTest() {
+            document.getElementById('results-view').classList.add('hidden');
+            document.getElementById('detailed-analysis-card').classList.add('hidden');
+            document.getElementById('home-view').classList.remove('hidden');
+        }
+
+        function showCustomMessage(title, text, isError = false) {
+            const borderCol = isError ? 'border-red-500/20 bg-red-950/20' : 'border-indigo-500/20 bg-slate-950/40';
+            const alertBox = document.createElement('div');
+            alertBox.className = `fixed bottom-6 right-6 z-50 p-5 rounded-2xl border backdrop-blur-md max-w-sm flex gap-4 shadow-2xl transition-all duration-300 translate-y-10 opacity-0 ${borderCol}`;
+            alertBox.innerHTML = `
+                <div class="p-2 bg-indigo-500/10 text-indigo-400 rounded-xl flex items-center justify-center h-9 w-9">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <div>
+                    <h5 class="text-sm font-bold text-white mb-0.5">${title}</h5>
+                    <p class="text-xs text-slate-300 leading-relaxed">${text}</p>
+                </div>
+            `;
+            document.body.appendChild(alertBox);
+            
+            setTimeout(() => {
+                alertBox.classList.remove('translate-y-10', 'opacity-0');
+            }, 50);
+
+            setTimeout(() => {
+                alertBox.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => alertBox.remove(), 300);
+            }, 4500);
+        }
+
+        // --- Confetti Particle System canvas renderer ---
+        function triggerConfettiSparkle(duration = 600) {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            let w = canvas.width = window.innerWidth;
+            let h = canvas.height = window.innerHeight;
+
+            window.addEventListener('resize', () => {
+                w = canvas.width = window.innerWidth;
+                h = canvas.height = window.innerHeight;
+            });
+
+            const colors = ['#6366f1', '#a855f7', '#ec4899', '#10b981', '#f59e0b'];
+            let particles = [];
+
+            function spawn() {
+                for (let i = 0; i < 4; i++) {
+                    particles.push({
+                        x: Math.random() * w,
+                        y: -10,
+                        size: Math.random() * 6 + 4,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        vx: Math.random() * 4 - 2,
+                        vy: Math.random() * 5 + 3,
+                        rotation: Math.random() * 360,
+                        rotSpeed: Math.random() * 4 - 2
+                    });
+                }
+            }
+
+            let active = true;
+            setTimeout(() => active = false, duration);
+
+            function loop() {
+                ctx.clearRect(0, 0, w, h);
+                
+                if (active) spawn();
+
+                particles.forEach((p, idx) => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.rotation += p.rotSpeed;
+
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                    ctx.restore();
+
+                    if (p.y > h) {
+                        particles.splice(idx, 1);
+                    }
+                });
+
+                if (particles.length > 0 || active) {
+                    requestAnimationFrame(loop);
+                } else {
+                    ctx.clearRect(0, 0, w, h);
+                }
+            }
+
+            loop();
         }
     </script>
 </body>
