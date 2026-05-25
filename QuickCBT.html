@@ -3,104 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBT Engine</title>
+    <title>CBT Pro Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .nav-scroll::-webkit-scrollbar { height: 6px; }
         .nav-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; }
-        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen p-4 md:p-8">
+<body class="bg-slate-50 min-h-screen p-4 md:p-8">
 
-    <div id="home-view" class="max-w-3xl mx-auto bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-        <h1 class="text-3xl font-bold text-gray-900 mb-6">CBT Engine</h1>
-        <textarea id="json-input" class="w-full h-64 p-4 bg-gray-50 border border-gray-200 rounded-xl font-mono text-xs focus:ring-2 focus:ring-blue-500 outline-none mb-6" placeholder='{"title": "Sample Quiz", "questions": [{"question": "...", "options": ["A. ..."], "answer": "..."}]}'></textarea>
+    <div id="home-view" class="max-w-2xl mx-auto bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+        <h1 class="text-3xl font-extrabold text-slate-900 mb-6">CBT Engine</h1>
+        <textarea id="json-input" class="w-full h-64 p-4 border border-slate-200 rounded-xl font-mono text-xs bg-slate-50 focus:ring-2 ring-blue-500 outline-none" placeholder='Paste your JSON (e.g., {"title":"ENT 211","questions":[...]})'></textarea>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <select id="mode-select" class="p-3 border rounded-xl bg-gray-50">
+        <div class="grid grid-cols-2 gap-4 mt-6">
+            <input type="number" id="q-limit" placeholder="Questions (e.g. 10)" class="border p-3 rounded-xl w-full">
+            <select id="mode" class="border p-3 rounded-xl bg-white">
                 <option value="practice">Practice Mode</option>
                 <option value="study">Study Mode</option>
             </select>
-            <input type="number" id="q-limit" placeholder="Number of questions (e.g., 10)" class="p-3 border rounded-xl bg-gray-50">
-            <div class="flex items-center gap-2">
-                <input type="checkbox" id="timer-check" onclick="toggleTimer()">
-                <label>Enable Timer (seconds)</label>
-            </div>
-            <input type="number" id="timer-val" placeholder="Seconds" class="p-3 border rounded-xl bg-gray-50 hidden">
         </div>
 
-        <button onclick="startTest()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all">Launch Test</button>
+        <div class="flex items-center gap-6 mt-4">
+            <label class="flex items-center gap-2"><input type="checkbox" id="shuffle"> Shuffle</label>
+            <label class="flex items-center gap-2"><input type="checkbox" id="use-timer" onchange="toggleTimer()"> Use Timer</label>
+            <input type="number" id="timer-val" placeholder="Seconds" class="border p-2 rounded-lg w-24 hidden">
+        </div>
+
+        <button onclick="startTest()" class="w-full mt-8 bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 shadow-lg">Launch Test</button>
     </div>
 
-    <div id="cbt-view" class="max-w-3xl mx-auto bg-white p-8 rounded-3xl shadow-sm hidden">
-        <div id="timer-display" class="text-right font-mono font-bold text-red-600 mb-4"></div>
+    <div id="cbt-view" class="max-w-3xl mx-auto bg-white p-8 rounded-3xl shadow-xl hidden">
+        <div class="flex justify-between items-center mb-6">
+            <h2 id="q-title" class="font-bold text-lg text-slate-700"></h2>
+            <div id="timer-display" class="font-mono font-bold text-red-600"></div>
+        </div>
+        
         <div id="nav-strip" class="flex gap-2 overflow-x-auto pb-4 nav-scroll mb-6 border-b"></div>
-        <h2 id="q-text" class="text-xl font-medium mb-8 text-gray-800"></h2>
+        
+        <p id="q-text" class="text-xl font-medium mb-8 min-h-[60px]"></p>
         <div id="options" class="space-y-3"></div>
+
         <div class="flex justify-between mt-10 pt-6 border-t">
-            <button onclick="changeQ(-1)" class="text-gray-500 font-bold hover:text-gray-800">Previous</button>
-            <button onclick="changeQ(1)" class="bg-gray-800 text-white px-8 py-2 rounded-lg">Next</button>
+            <button onclick="changeQ(-1)" class="text-slate-500 font-bold">Previous</button>
+            <button onclick="changeQ(1)" class="bg-slate-900 text-white px-8 py-3 rounded-xl">Next</button>
         </div>
     </div>
 
     <script>
-        let data = [], currentIdx = 0, userAnswers = [], mode, timer, timeLeft;
+        let data, currentIdx = 0, userAnswers = [], timerInterval, timeLeft;
 
         function toggleTimer() {
-            document.getElementById('timer-val').classList.toggle('hidden');
+            document.getElementById('timer-val').classList.toggle('hidden', !document.getElementById('use-timer').checked);
         }
 
         function startTest() {
             try {
                 const raw = JSON.parse(document.getElementById('json-input').value);
-                data = raw.questions.slice(0, parseInt(document.getElementById('q-limit').value) || raw.questions.length);
-                mode = document.getElementById('mode-select').value;
-                userAnswers = new Array(data.length).fill(null);
+                data = raw.questions;
+                if(document.getElementById('shuffle').checked) data.sort(() => Math.random() - 0.5);
+                data = data.slice(0, document.getElementById('q-limit').value || data.length);
                 
+                userAnswers = new Array(data.length).fill(null);
+                currentIdx = 0;
+                
+                if(document.getElementById('use-timer').checked) {
+                    timeLeft = parseInt(document.getElementById('timer-val').value);
+                    startTimer();
+                }
+
                 document.getElementById('home-view').classList.add('hidden');
                 document.getElementById('cbt-view').classList.remove('hidden');
-                
-                if(document.getElementById('timer-check').checked) startTimer();
-                renderNav(); loadQ();
-            } catch { alert("Invalid JSON format"); }
+                renderNav();
+                loadQ();
+            } catch { alert("Check JSON Syntax"); }
         }
 
         function startTimer() {
-            timeLeft = parseInt(document.getElementById('timer-val').value);
-            timer = setInterval(() => {
+            const display = document.getElementById('timer-display');
+            timerInterval = setInterval(() => {
                 timeLeft--;
-                document.getElementById('timer-display').innerText = `Time: ${timeLeft}s`;
-                if(timeLeft <= 0) { clearInterval(timer); alert("Time's up!"); }
+                display.innerText = timeLeft + "s";
+                if(timeLeft <= 0) { clearInterval(timerInterval); alert("Time Up!"); endTest(); }
             }, 1000);
         }
 
         function renderNav() {
-            const strip = document.getElementById('nav-strip');
-            strip.innerHTML = data.map((_, i) => `<button onclick="jumpTo(${i})" class="px-4 py-2 bg-gray-100 rounded-lg min-w-[40px]">${i + 1}</button>`).join('');
+            document.getElementById('nav-strip').innerHTML = data.map((_, i) => `
+                <button onclick="jumpTo(${i})" class="px-4 py-2 bg-slate-100 rounded-lg min-w-[40px] font-bold ${i===currentIdx?'bg-blue-600 text-white':''}">${i+1}</button>
+            `).join('');
         }
 
         function loadQ() {
             const q = data[currentIdx];
             document.getElementById('q-text').innerText = q.question;
-            const container = document.getElementById('options');
-            container.innerHTML = q.options.map(opt => `
-                <button onclick="select('${opt}')" class="w-full text-left p-4 border rounded-xl hover:bg-blue-50 ${userAnswers[currentIdx] === opt ? 'bg-blue-100 border-blue-400' : ''}">
+            document.getElementById('options').innerHTML = q.options.map(opt => `
+                <button onclick="select('${opt.replace(/'/g, "\\'")}', '${q.answer.replace(/'/g, "\\'")}')" 
+                        class="w-full text-left p-4 border rounded-xl hover:bg-slate-50 ${userAnswers[currentIdx] === opt ? 'bg-blue-100 border-blue-400' : ''}">
                     ${opt}
                 </button>
             `).join('');
+            renderNav();
         }
 
-        function select(opt) {
-            userAnswers[currentIdx] = opt;
-            if(mode === 'study') {
-                const btns = document.getElementById('options').querySelectorAll('button');
-                btns.forEach(b => {
-                    b.disabled = true;
-                    if(b.innerText === data[currentIdx].answer) b.classList.add('correct');
-                    else if(b.innerText === opt) b.classList.add('wrong');
-                });
+        function select(choice, correct) {
+            userAnswers[currentIdx] = choice;
+            if(document.getElementById('mode').value === 'study') {
+                alert(choice === correct ? "Correct! ✨" : "Wrong! The answer is " + correct);
             }
             loadQ();
         }
@@ -111,6 +122,11 @@
         }
 
         function jumpTo(i) { currentIdx = i; loadQ(); }
+
+        function endTest() {
+            clearInterval(timerInterval);
+            location.reload(); // Simple way to reset state to home
+        }
     </script>
 </body>
 </html>
