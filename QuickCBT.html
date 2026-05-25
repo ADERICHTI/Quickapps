@@ -6,34 +6,114 @@
     <title>CBT Pro Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #f3f4f6; }
         .nav-scroll::-webkit-scrollbar { height: 6px; }
-        .nav-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
-        .correct { background: #d1fae5; border-color: #059669; }
-        .wrong { background: #fee2e2; border-color: #dc2626; }
+        .nav-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
     </style>
 </head>
-<body class="p-4 md:p-10">
+<body class="bg-gray-50 min-h-screen p-4 md:p-8">
 
-    <div id="home-view" class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-sm">
-        <h1 class="text-2xl font-bold mb-4">CBT Engine</h1>
-        <textarea id="json-input" class="w-full h-96 p-4 border rounded-xl font-mono text-xs" placeholder="Paste your large JSON bank here..."></textarea>
-        <div class="flex gap-4 mt-6">
-            <input type="number" id="question-limit" value="10" class="border p-2 rounded w-24">
-            <button onclick="startTest()" class="bg-blue-600 text-white px-8 py-2 rounded-lg font-bold">Start Test</button>
+    <div id="home-view" class="max-w-3xl mx-auto bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">CBT Engine</h1>
+        <textarea id="json-input" class="w-full h-64 p-4 bg-gray-50 border border-gray-200 rounded-xl font-mono text-xs focus:ring-2 focus:ring-blue-500 outline-none mb-6" placeholder='{"title": "Sample Quiz", "questions": [{"question": "...", "options": ["A. ..."], "answer": "..."}]}'></textarea>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <select id="mode-select" class="p-3 border rounded-xl bg-gray-50">
+                <option value="practice">Practice Mode</option>
+                <option value="study">Study Mode</option>
+            </select>
+            <input type="number" id="q-limit" placeholder="Number of questions (e.g., 10)" class="p-3 border rounded-xl bg-gray-50">
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="timer-check" onclick="toggleTimer()">
+                <label>Enable Timer (seconds)</label>
+            </div>
+            <input type="number" id="timer-val" placeholder="Seconds" class="p-3 border rounded-xl bg-gray-50 hidden">
+        </div>
+
+        <button onclick="startTest()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all">Launch Test</button>
+    </div>
+
+    <div id="cbt-view" class="max-w-3xl mx-auto bg-white p-8 rounded-3xl shadow-sm hidden">
+        <div id="timer-display" class="text-right font-mono font-bold text-red-600 mb-4"></div>
+        <div id="nav-strip" class="flex gap-2 overflow-x-auto pb-4 nav-scroll mb-6 border-b"></div>
+        <h2 id="q-text" class="text-xl font-medium mb-8 text-gray-800"></h2>
+        <div id="options" class="space-y-3"></div>
+        <div class="flex justify-between mt-10 pt-6 border-t">
+            <button onclick="changeQ(-1)" class="text-gray-500 font-bold hover:text-gray-800">Previous</button>
+            <button onclick="changeQ(1)" class="bg-gray-800 text-white px-8 py-2 rounded-lg">Next</button>
         </div>
     </div>
 
-    <div id="cbt-view" class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-sm hidden">
-        <div id="nav-strip" class="flex gap-2 overflow-x-auto pb-4 nav-scroll mb-6 border-b"></div>
-        <div id="q-content" class="min-h-[300px]">
-            <h2 id="q-text" class="text-xl font-medium mb-6"></h2>
-            <div id="options" class="space-y-3"></div>
-        </div>
-        <div class="flex justify-between mt-10">
-            <button onclick="changeQ(-1)" class="text-gray-500 font-bold">Previous</button>
-            <button onclick="changeQ(1)" class="bg-gray-800 text-white px-6 py-2 rounded-lg">Next</button>
-        </div>
+    <script>
+        let data = [], currentIdx = 0, userAnswers = [], mode, timer, timeLeft;
+
+        function toggleTimer() {
+            document.getElementById('timer-val').classList.toggle('hidden');
+        }
+
+        function startTest() {
+            try {
+                const raw = JSON.parse(document.getElementById('json-input').value);
+                data = raw.questions.slice(0, parseInt(document.getElementById('q-limit').value) || raw.questions.length);
+                mode = document.getElementById('mode-select').value;
+                userAnswers = new Array(data.length).fill(null);
+                
+                document.getElementById('home-view').classList.add('hidden');
+                document.getElementById('cbt-view').classList.remove('hidden');
+                
+                if(document.getElementById('timer-check').checked) startTimer();
+                renderNav(); loadQ();
+            } catch { alert("Invalid JSON format"); }
+        }
+
+        function startTimer() {
+            timeLeft = parseInt(document.getElementById('timer-val').value);
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer-display').innerText = `Time: ${timeLeft}s`;
+                if(timeLeft <= 0) { clearInterval(timer); alert("Time's up!"); }
+            }, 1000);
+        }
+
+        function renderNav() {
+            const strip = document.getElementById('nav-strip');
+            strip.innerHTML = data.map((_, i) => `<button onclick="jumpTo(${i})" class="px-4 py-2 bg-gray-100 rounded-lg min-w-[40px]">${i + 1}</button>`).join('');
+        }
+
+        function loadQ() {
+            const q = data[currentIdx];
+            document.getElementById('q-text').innerText = q.question;
+            const container = document.getElementById('options');
+            container.innerHTML = q.options.map(opt => `
+                <button onclick="select('${opt}')" class="w-full text-left p-4 border rounded-xl hover:bg-blue-50 ${userAnswers[currentIdx] === opt ? 'bg-blue-100 border-blue-400' : ''}">
+                    ${opt}
+                </button>
+            `).join('');
+        }
+
+        function select(opt) {
+            userAnswers[currentIdx] = opt;
+            if(mode === 'study') {
+                const btns = document.getElementById('options').querySelectorAll('button');
+                btns.forEach(b => {
+                    b.disabled = true;
+                    if(b.innerText === data[currentIdx].answer) b.classList.add('correct');
+                    else if(b.innerText === opt) b.classList.add('wrong');
+                });
+            }
+            loadQ();
+        }
+
+        function changeQ(dir) {
+            currentIdx = Math.max(0, Math.min(data.length - 1, currentIdx + dir));
+            loadQ();
+        }
+
+        function jumpTo(i) { currentIdx = i; loadQ(); }
+    </script>
+</body>
+</html>
     </div>
 
     <script>
