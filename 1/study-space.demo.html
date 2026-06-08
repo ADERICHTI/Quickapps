@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>STUDY SPACE // TERMINAL GATE</title>
+  <style>
+    /* ----- GLOBAL DESIGN TOKENS ----- */
+    :root {
+      --color-canvas-primary: #08090A;
+      --color-surface-widget: #121417;
+      --color-accent-scientist: #00F0FF;
+      --color-telemetry-amber: #FFB300;
+      --color-border-rail: #1E222B;
+      --font-mono: 'Courier New', 'Fira Code', monospace;
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --transition-sweep: cubic-bezier(0.25, 1, 0.5, 1);
+      --scale-micro: transform 80ms ease;
+    }
+
+    [data-theme="light"] {
+      --color-canvas-primary: #F8F9FA;
+      --color-surface-widget: #FFFFFF;
+      --color-accent-scientist: #0055FF;
+      --color-telemetry-amber: #D97706;
+      --color-border-rail: #E2E8F0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--color-canvas-primary);
+      color: var(--color-accent-scientist);
+      font-family: var(--font-sans);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 420px;  /* mobile-first, expand for larger screens later */
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+      border-left: 1px solid var(--color-border-rail);
+      border-right: 1px solid var(--color-border-rail);
+      background: var(--color-canvas-primary);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ----- NO SHADOWS POLICY ----- */
+    * {
+      box-shadow: none !important;
+    }
+
+    /* ----- TELEMETRY TEXT STYLING ----- */
+    .telemetry, .mono, .points, .rank, .counter, .timer {
+      font-family: var(--font-mono);
+      font-weight: bold;
+      letter-spacing: -0.5px;
+    }
+
+    /* ----- BUTTON MICRO-INTERACTION ----- */
+    button, .clickable {
+      transition: var(--scale-micro);
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: transparent;
+      color: inherit;
+      font-family: inherit;
+    }
+    button:active, .clickable:active {
+      transform: scale(1.04);
+    }
+    .btn-primary {
+      border: 1px solid var(--color-accent-scientist);
+      color: var(--color-accent-scientist);
+      background: transparent;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+
+    /* ----- VIEW TRANSITIONS (SWEEP) ----- */
+    .view {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-canvas-primary);
+      transition: transform 0.4s var(--transition-sweep), opacity 0.3s;
+      will-change: transform;
+      overflow-y: auto;
+      padding: 1.5rem 1rem;
+    }
+    .view.hidden {
+      transform: translateX(100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .view.active {
+      transform: translateX(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    /* sweeping from left when navigating back */
+    .view.sweep-left {
+      transform: translateX(-100%);
+    }
+
+    /* ----- BORDERS & LINES ----- */
+    .border-1 {
+      border: 1px solid var(--color-border-rail);
+    }
+    .border-accent {
+      border-color: var(--color-accent-scientist);
+    }
+    .border-amber {
+      border-color: var(--color-telemetry-amber);
+    }
+    .hr {
+      height: 1px;
+      background: var(--color-border-rail);
+      width: 100%;
+    }
+
+    /* ----- LANDING PAGE SPECIFICS ----- */
+    #landing {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .scramble-title {
+      font-family: var(--font-mono);
+      font-size: 2.5rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      margin-bottom: 2rem;
+      height: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .theme-toggle {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 1.5rem;
+      background: transparent;
+      border: 1px solid var(--color-border-rail);
+      padding: 0.3rem 0.6rem;
+      cursor: pointer;
+    }
+
+    /* ----- DASHBOARD LAYOUT ----- */
+    .dashboard-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      height: 100%;
+    }
+    .profile-section {
+      border: 1px solid var(--color-border-rail);
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: var(--color-border-rail);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      overflow: hidden;
+    }
+    .points-large {
+      font-size: 2rem;
+    }
+    .clan-panel, .competition-hub {
+      border: 1px solid var(--color-border-rail);
+      padding: 1rem;
+      flex: 1;
+    }
+    .bottom-nav {
+      display: flex;
+      justify-content: space-around;
+      padding: 0.8rem 0;
+      border-top: 1px solid var(--color-border-rail);
+      margin-top: auto;
+    }
+    .nav-icon {
+      font-size: 1.2rem;
+      background: transparent;
+      border: none;
+      color: var(--color-accent-scientist);
+      opacity: 0.7;
+    }
+    .nav-icon.active {
+      opacity: 1;
+      border-bottom: 1px solid var(--color-accent-scientist);
+    }
+
+    /* ----- GAME ENGINE UI (PRACTICE/ARENA/TOURNAMENT) ----- */
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      height: 100%;
+    }
+    .tension-rail {
+      height: 4px;
+      background: var(--color-accent-scientist);
+      transition: background 0.3s;
+    }
+    .tension-rail.escalated {
+      background: var(--color-telemetry-amber);
+    }
+    .question-box {
+      border: 1px solid var(--color-border-rail);
+      padding: 1.5rem;
+      background: var(--color-surface-widget);
+      flex: 1;
+    }
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+    .option {
+      border: 1px solid var(--color-border-rail);
+      padding: 0.8rem;
+      text-align: center;
+      background: var(--color-surface-widget);
+    }
+    .option.locked {
+      opacity: 0.5;
+      pointer-events: none;
+      border-color: var(--color-telemetry-amber);
+      position: relative;
+    }
+    .option.locked::after {
+      content: "LOCKED";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: var(--font-mono);
+      color: var(--color-telemetry-amber);
+      font-size: 0.8rem;
+    }
+    .timer-display {
+      font-size: 2.5rem;
+      text-align: center;
+      font-family: var(--font-mono);
+      color: var(--color-accent-scientist);
+    }
+    .timer-display.warning {
+      color: var(--color-telemetry-amber);
+      animation: pulse 0.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    .lockout-overlay {
+      position: absolute;
+      top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      color: var(--color-telemetry-amber);
+      font-size: 1.5rem;
+      z-index: 10;
+    }
+
+    /* ----- CLAN DASHBOARD ----- */
+    .clan-lock {
+      border: 1px solid var(--color-border-rail);
+      padding: 1rem;
+      text-align: center;
+      color: var(--color-telemetry-amber);
+      background: var(--color-surface-widget);
+      font-family: var(--font-mono);
+    }
+    .roster-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--color-canvas-primary);
+      z-index: 20;
+      overflow-y: auto;
+      padding: 1rem;
+      transition: transform 0.3s var(--transition-sweep);
+      transform: translateX(100%);
+    }
+    .roster-overlay.open {
+      transform: translateX(0);
+    }
+
+    /* ----- CHAT WIDGET ----- */
+    .chat-messages {
+      border: 1px solid var(--color-border-rail);
+      height: 150px;
+      overflow-y: auto;
+      padding: 0.5rem;
+      background: var(--color-surface-widget);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+    .chat-input {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .chat-input input {
+      flex: 1;
+      background: transparent;
+      border: 1px solid var(--color-border-rail);
+      padding: 0.5rem;
+      color: inherit;
+      font-family: var(--font-mono);
+    }
+
+    /* ----- FOCUS SAFEGUARD WARNING ----- */
+    .focus-warning {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--color-telemetry-amber);
+      color: black;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      z-index: 30;
+      display: none;
+    }
+
+    /* ----- TOURNAMENT BRACKET (simplified) ----- */
+    .bracket {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      border: 1px solid var(--color-border-rail);
+      padding: 0.5rem;
+    }
+    .bracket-match {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--color-border-rail);
+      padding: 0.3rem;
+    }
+
+    /* Responsive adjustments */
+    @media (min-width: 768px) {
+      #app { max-width: 800px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- All views will be dynamically inserted here via JS -->
+  </div>
+
+  <div class="focus-warning" id="focus-warning">⚠️ FOCUS LOST: PENALTY APPLIED</div>
+
+  <script>
+    // ===================== STUDY SPACE SPA =====================
+    // All backend logic simulated with variables. Replace with Firebase/Firestore calls.
+
+    // ----- GLOBAL STATE -----
+    const AppState = {
+      currentUser: null,
+      users: [
+        { id: 'u1', name: 'Alex Neural', email: 'operator@studyspace.com', password: 'password123', points: 14500, rank: 4.12, avatar: 'AN', clanId: 'sandbox_1A', lastActive: Date.now() },
+        { id: 'u2', name: 'Sam Synapse', email: 'sam@s.com', password: 'test', points: 2500, rank: 2.15, avatar: 'SS', clanId: 'sandbox_1B', lastActive: Date.now() - 90000000 },
+        { id: 'u3', name: 'Jordan Cortex', email: 'j@s.com', password: 'test', points: 80000, rank: 7.83, avatar: 'JC', clanId: 'league_A', lastActive: Date.now() }
+      ],
+      clans: {
+        sandbox_1A: { name: 'Neuron Knights', members: ['u1'], combinedPoints: 14500, placement: '#5 GLOBAL' },
+        sandbox_1B: { name: 'Synaptic Striders', members: ['u2'], combinedPoints: 2500, placement: '#12 GLOBAL' },
+        league_A: { name: 'Cortex Collective', members: ['u3'], combinedPoints: 80000, placement: '#1 GLOBAL' }
+      },
+      tournamentBracket: [
+        { match: 'Neuron Knights vs Synaptic Striders', status: 'upcoming' },
+        { match: 'Cortex Collective vs Axon Alliance', status: 'live' }
+      ],
+      chatMessages: [
+        { user: 'SYSTEM', text: 'Welcome to Clan Chat.', timestamp: Date.now() }
+      ],
+      currentView: 'landing',
+      gameSession: null,
+      practiceTimerMode: 'auto', // 'auto' or 'custom'
+      customTimerSeconds: 10
+    };
+
+    // ----- DESIGN TOKEN REFERENCE (for JS manipulation) -----
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+
+    // ----- VIEW ROUTER -----
+    function navigateTo(viewName, direction = 'forward') {
+      const app = document.getElementById('app');
+      const currentViewEl = app.querySelector(`.view.active`);
+      if (currentViewEl) {
+        currentViewEl.classList.remove('active');
+        currentViewEl.classList.add('hidden');
+        if (direction === 'back') currentViewEl.classList.add('sweep-left');
+        setTimeout(() => {
+          currentViewEl.remove();
+          renderView(viewName);
+        }, 100);
+      } else {
+        renderView(viewName);
+      }
+    }
+
+    function renderView(viewName) {
+      const app = document.getElementById('app');
+      const view = document.createElement('div');
+      view.className = 'view active';
+      view.dataset.view = viewName;
+      switch(viewName) {
+        case 'landing': renderLanding(view); break;
+        case 'auth': renderAuth(view); break;
+        case 'dashboard': renderDashboard(view); break;
+        case 'practice': renderPractice(view); break;
+        case 'arena': renderArena(view); break;
+        case 'tournament': renderTournament(view); break;
+        case 'clan': renderClan(view); break;
+        default: break;
+      }
+      app.appendChild(view);
+      AppState.currentView = viewName;
+      // Ensure theme toggle always visible on landing, auth? we can add persistent toggle later
+    }
+
+    // ----- LANDING PAGE -----
+    function renderLanding(container) {
+      container.innerHTML = `
+        <button class="theme-toggle" id="themeToggleLanding">🌓</button>
+        <div class="scramble-title" id="scrambleTitle">STUDY SPACE</div>
+        <button class="btn-primary" id="initSessionBtn">INITIALIZE_SESSION</button>
+      `;
+      // Scramble animation
+      const titleEl = container.querySelector('#scrambleTitle');
+      scrambleText(titleEl, 'STUDY SPACE', 400);
+      // Theme toggle
+      container.querySelector('#themeToggleLanding').addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme');
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+      });
+      container.querySelector('#initSessionBtn').addEventListener('click', () => navigateTo('auth'));
+    }
+
+    function scrambleText(element, finalText, duration) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
+      let iterations = 0;
+      const maxIterations = 10;
+      const interval = duration / maxIterations;
+      const timer = setInterval(() => {
+        element.textContent = finalText.split('').map((char, idx) => {
+          if (idx < iterations) return finalText[idx];
+          return chars[Math.floor(Math.random() * chars.length)];
+        }).join('');
+        iterations++;
+        if (iterations >= maxIterations) {
+          clearInterval(timer);
+          element.textContent = finalText;
+        }
+      }, interval);
+    }
+
+    // ----- AUTH PAGE -----
+    function renderAuth(container) {
+      container.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:1rem; margin-top:4rem;">
+          <h2 class="mono" style="text-align:center;">AUTH_GATE</h2>
+          <input type="email" id="authEmail" placeholder="OPERATOR_ID" class="mono border-1" style="padding:0.8rem; background:transparent; color:inherit;">
+          <input type="password" id="authPassword" placeholder="ACCESS_PASSPHRASE" class="mono border-1" style="padding:0.8rem; background:transparent; color:inherit;">
+          <div id="authError" style="color:var(--color-telemetry-amber); min-height:1.2rem;"></div>
+          <button class="btn-primary" id="authLoginBtn">AUTHENTICATE</button>
+          <button style="margin-top:1rem; opacity:0.7;" id="authBackBtn">← BACK TO TERMINAL</button>
+        </div>
+      `;
+      container.querySelector('#authLoginBtn').addEventListener('click', () => {
+        const email = container.querySelector('#authEmail').value.trim();
+        const password = container.querySelector('#authPassword').value;
+        const errorEl = container.querySelector('#authError');
+        if (!email || !password) {
+          errorEl.textContent = 'ERR: FIELDS REQUIRED';
+          return;
+        }
+        // Simulate Firestore auth lookup
+        const user = AppState.users.find(u => u.email === email && u.password === password);
+        if (user) {
+          AppState.currentUser = user;
+          // Apply point decay on login (simulated daily check)
+          applyDecay(user);
+          // Flash confirm border and transition
+          container.querySelector('#authLoginBtn').style.borderColor = 'var(--color-accent-scientist)';
+          setTimeout(() => navigateTo('dashboard'), 300);
+        } else {
+          errorEl.textContent = 'ERR: INVALID CREDENTIALS';
+        }
+      });
+      container.querySelector('#authBackBtn').addEventListener('click', () => navigateTo('landing', 'back'));
+    }
+
+    // ----- POINT DECAY SIMULATION (runs on user load) -----
+    function applyDecay(user) {
+      const now = Date.now();
+      const td = 24 * 60 * 60 * 1000; // 24h grace
+      const lambda = 0.1; // decay rate
+      if (now - user.lastActive > td) {
+        const t = (now - user.lastActive - td) / (1000 * 60 * 60); // hours over grace
+        const newPoints = Math.floor(user.points * Math.exp(-lambda * t));
+        user.points = newPoints > 0 ? newPoints : 0;
+        user.lastActive = now;
+        // Recalculate rank
+        user.rank = calculateRank(user.points);
+      }
+    }
+
+    // ----- RANK CALCULATION (Piecewise) -----
+    function calculateRank(points) {
+      if (points < 0) return 1.00;
+      // Linear region 1.00-4.99: each 3000 points = 1 rank level?
+      const linearCost = 3000;
+      if (points <= linearCost * 3.99) { // up to rank 4.99
+        return 1 + points / linearCost;
+      }
+      // Asymptotic region 5.00-10.00: use logarithmic scale
+      const extra = points - linearCost * 3.99;
+      const maxExtra = 50000; // approximate to reach 10.0
+      const rank = 5 + (5 * Math.log(1 + (extra / 1000))) / Math.log(1 + (maxExtra/1000));
+      return Math.min(10, Math.round(rank * 100) / 100);
+    }
+
+    // ----- DASHBOARD -----
+    function renderDashboard(container) {
+      const user = AppState.currentUser;
+      const clan = AppState.clans[user.clanId];
+      container.innerHTML = `
+        <div class="dashboard-grid">
+          <div class="profile-section">
+            <div class="avatar">${user.avatar}</div>
+            <div>
+              <div>${user.name}</div>
+              <div class="points-large telemetry">${user.points.toLocaleString()} PTS</div>
+              <div class="telemetry">RANK ${user.rank.toFixed(2)}</div>
+            </div>
+          </div>
+          <div class="clan-panel">
+            <div>${clan.name}</div>
+            <div class="telemetry">${clan.combinedPoints.toLocaleString()} PTS | ${clan.placement}</div>
+            <button class="btn-primary" id="openClanBtn">OPEN_CLAN_DASHBOARD</button>
+          </div>
+          <div class="competition-hub">
+            <button class="btn-primary" id="launchPractice">LAUNCH_PRACTICE_MODE</button>
+            <button class="btn-primary" id="enterArena">ENTER_LIVE_CBT_ARENA</button>
+            <button class="btn-primary" id="registerTournament">REGISTER_TOURNAMENT</button>
+          </div>
+          <div class="bottom-nav">
+            <button class="nav-icon active" data-nav="dashboard">⌂</button>
+            <button class="nav-icon" data-nav="practice">🖥</button>
+            <button class="nav-icon" data-nav="arena">⚔️</button>
+            <button class="nav-icon" data-nav="tournament">🏆</button>
+            <button class="nav-icon" data-nav="clan">👥</button>
+          </div>
+        </div>
+      `;
+      // Navigation
+      container.querySelector('#openClanBtn').addEventListener('click', () => navigateTo('clan'));
+      container.querySelector('#launchPractice').addEventListener('click', () => navigateTo('practice'));
+      container.querySelector('#enterArena').addEventListener('click', () => navigateTo('arena'));
+      container.querySelector('#registerTournament').addEventListener('click', () => navigateTo('tournament'));
+      const navButtons = container.querySelectorAll('.nav-icon');
+      navButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const view = e.target.dataset.nav;
+          if (view && view !== 'dashboard') navigateTo(view);
+        });
+      });
+    }
+
+    // ============ SHARED CBT GAME ENGINE ============
+    class CBTEngine {
+      constructor(mode, config = {}) {
+        this.mode = mode; // 'practice', 'arena', 'tournament'
+        this.config = config; // { timerMode:'auto'/'custom', customSeconds:10 } for practice
+        this.questions = this.generateQuestions();
+        this.currentIndex = 0;
+        this.score = 0;
+        this.timeLeft = this.getInitialTime();
+        this.timerInterval = null;
+        this.sessionActive = false;
+        this.difficultyLevel = 1;
+        this.lockout = false; // for arena/tournament lockout
+        this.botAnswered = false;
+        this.botTimeout = null;
+        this.onUpdate = null; // callback to update UI
+        this.onSessionEnd = null;
+        this.focusPenalty = false;
+        this.setupFocusSafeguard();
+      }
+
+      generateQuestions() {
+        // Placeholder question bank
+        return [
+          { q: 'What is 2+2?', options: ['3','4','5','6'], correct: 1 },
+          { q: 'Capital of France?', options: ['Berlin','Madrid','Paris','Rome'], correct: 2 },
+          { q: 'React is a...', options: ['Database','Framework','Library','Language'], correct: 2 },
+          { q: 'Pi to 2 decimals?', options: ['3.14','3.16','3.12','2.14'], correct: 0 },
+          { q: 'H2O is...', options: ['Hydrogen','Oxygen','Water','Salt'], correct: 2 }
+        ];
+      }
+
+      getInitialTime() {
+        if (this.mode === 'practice') {
+          if (this.config.timerMode === 'auto') return Math.max(3, 10 - this.difficultyLevel * 0.5);
+          if (this.config.timerMode === 'custom') return this.config.customSeconds > 0 ? this.config.customSeconds : 9999;
+        }
+        // competitive: tight timer
+        return 8 - this.difficultyLevel * 0.3;
+      }
+
+      startSession() {
+        this.sessionActive = true;
+        this.currentIndex = 0;
+        this.score = 0;
+        this.difficultyLevel = 1;
+        this.lockout = false;
+        this.botAnswered = false;
+        if (this.onUpdate) this.onUpdate(this.getState());
+        this.startTimer();
+        if (this.mode !== 'practice') this.scheduleBotAnswer();
+      }
+
+      stopSession() {
+        this.sessionActive = false;
+        clearInterval(this.timerInterval);
+        clearTimeout(this.botTimeout);
+      }
+
+      startTimer() {
+        this.timeLeft = this.getInitialTime();
+        clearInterval(this.timerInterval);
+        this.timerInterval = setInterval(() => {
+          if (!this.sessionActive) return;
+          this.timeLeft = Math.max(0, this.timeLeft - 0.1);
+          if (this.onUpdate) this.onUpdate(this.getState());
+          if (this.timeLeft <= 0) {
+            this.handleTimeout();
+          }
+        }, 100);
+      }
+
+      scheduleBotAnswer() {
+        // Simulate bot answering after a random delay shorter than timer
+        const botDelay = (this.getInitialTime() * 0.6 + Math.random() * 0.8) * 1000;
+        this.botTimeout = setTimeout(() => {
+          if (this.sessionActive && !this.lockout && !this.botAnswered) {
+            this.botAnswered = true;
+            // Bot picks correct answer with 80% probability
+            const correct = this.questions[this.currentIndex].correct;
+            const botChoice = Math.random() < 0.8 ? correct : (correct + 1) % 4;
+            this.submitAnswer(botChoice, true);
+          }
+        }, botDelay);
+      }
+
+      submitAnswer(choiceIndex, isBot = false) {
+        if (!this.sessionActive || this.lockout) return;
+        const question = this.questions[this.currentIndex];
+        const correct = choiceIndex === question.correct;
+        if (this.mode !== 'practice' && !isBot) {
+          // First human answer locks out others
+          this.lockout = true;
+          if (this.onUpdate) this.onUpdate(this.getState());
+        }
+        if (correct) {
+          const speedBonus = this.timeLeft > 0 ? Math.floor(this.timeLeft * 10) : 0;
+          this.score += 100 + speedBonus + this.difficultyLevel * 20;
+        }
+        this.difficultyLevel++;
+        if (this.currentIndex < this.questions.length - 1) {
+          this.currentIndex++;
+          this.lockout = false;
+          this.botAnswered = false;
+          clearTimeout(this.botTimeout);
+          this.startTimer();
+          if (this.mode !== 'practice') this.scheduleBotAnswer();
+          if (this.onUpdate) this.onUpdate(this.getState());
+        } else {
+          this.endSession();
+        }
+      }
+
+      handleTimeout() {
+        // Auto-submit wrong if no answer
+        if (this.sessionActive) {
+          this.submitAnswer(-1); // no answer, treat as wrong
+        }
+      }
+
+      endSession() {
+        this.stopSession();
+        AppState.currentUser.points += this.score;
+        AppState.currentUser.rank = calculateRank(AppState.currentUser.points);
+        if (this.onSessionEnd) this.onSessionEnd(this.score);
+        if (this.onUpdate) this.onUpdate(this.getState());
+      }
+
+      getState() {
+        const question = this.questions[this.currentIndex];
+        return {
+          question: question,
+          timer: Math.ceil(this.timeLeft),
+          difficulty: this.difficultyLevel,
+          score: this.score,
+          lockout: this.lockout,
+          sessionActive: this.sessionActive,
+          mode: this.mode
+        };
+      }
+
+      setupFocusSafeguard() {
+        if (this.mode === 'arena' || this.mode === 'tournament') {
+          document.addEventListener('visibilitychange', () => {
+            if (document.hidden && this.sessionActive && !this.focusPenalty) {
+              this.focusPenalty = true;
+              this.score -= 200;
+              AppState.currentUser.points = Math.max(0, AppState.currentUser.points - 200);
+              document.getElementById('focus-warning').style.display = 'block';
+              setTimeout(() => document.getElementById('focus-warning').style.display = 'none', 2000);
+              if (this.onUpdate) this.onUpdate(this.getState());
+            }
+          });
+        }
+      }
+    }
+
+    // ----- PRACTICE MODE (with dual timer config) -----
+    function renderPractice(container) {
+      if (!AppState.currentUser) { navigateTo('auth'); return; }
+      // Show timer mode selection first, then game
+      container.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:1rem; height:100%;">
+          <h2 class="mono">PRACTICE SANDBOX</h2>
+          <div id="practiceConfig" class="border-1" style="padding:1rem;">
+            <label class="mono">TIMER MODE:</label>
+            <select id="timerModeSelect" class="border-1 mono" style="padding:0.5rem; background:transparent; color:inherit;">
+              <option value="auto" ${AppState.practiceTimerMode === 'auto' ? 'selected' : ''}>Auto (Bot Speed)</option>
+              <option value="custom" ${AppState.practiceTimerMode === 'custom' ? 'selected' : ''}>Custom</option>
+            </select>
+            <div id="customTimerDiv" style="margin-top:0.5rem; ${AppState.practiceTimerMode === 'custom' ? '' : 'display:none;'}">
+              <label class="mono">Seconds (0 = No Limit):</label>
+              <input type="number" id="customSecondsInput" class="border-1 mono" value="${AppState.customTimerSeconds}" min="0" step="1" style="width:80px; padding:0.5rem; background:transparent; color:inherit;">
+            </div>
+            <button class="btn-primary" id="startPracticeBtn">START SESSION</button>
+          </div>
+          <div id="practiceGameArea" style="display:none; flex-direction:column; gap:1rem; flex:1;">
+            <div class="tension-rail" id="tensionRail"></div>
+            <div class="timer-display" id="practiceTimer">10</div>
+            <div class="question-box" id="practiceQuestion"></div>
+            <div class="options-grid" id="practiceOptions"></div>
+            <div class="telemetry">Score: <span id="practiceScore">0</span></div>
+            <button class="btn-primary" id="endPracticeBtn">END SESSION</button>
+          </div>
+        </div>
+      `;
+
+      const modeSelect = container.querySelector('#timerModeSelect');
+      const customDiv = container.querySelector('#customTimerDiv');
+      const customInput = container.querySelector('#customSecondsInput');
+      modeSelect.addEventListener('change', (e) => {
+        if (e.target.value === 'custom') {
+          customDiv.style.display = 'block';
+        } else {
+          customDiv.style.display = 'none';
+        }
+      });
+
+      container.querySelector('#startPracticeBtn').addEventListener('click', () => {
+        const mode = modeSelect.value;
+        AppState.practiceTimerMode = mode;
+        const customSec = parseInt(customInput.value, 10) || 10;
+        AppState.customTimerSeconds = customSec;
+        container.querySelector('#practiceConfig').style.display = 'none';
+        const gameArea = container.querySelector('#practiceGameArea');
+        gameArea.style.display = 'flex';
+        // Initialize engine
+        const engine = new CBTEngine('practice', { timerMode: mode, customSeconds: customSec });
+        AppState.gameSession = engine;
+        engine.onUpdate = (state) => {
+          updatePracticeUI(container, state);
+        };
+        engine.onSessionEnd = (finalScore) => {
+          alert(`Session ended! Score: ${finalScore}`);
+        };
+        engine.startSession();
+      });
+
+      container.querySelector('#endPracticeBtn')?.addEventListener('click', () => {
+        if (AppState.gameSession) AppState.gameSession.stopSession();
+        navigateTo('dashboard');
+      });
+    }
+
+    function updatePracticeUI(container, state) {
+      const timerEl = container.querySelector('#practiceTimer');
+      if (timerEl) {
+        timerEl.textContent = state.timer;
+        timerEl.className = 'timer-display' + (state.timer <= 3 ? ' warning' : '');
+      }
+      const rail = container.querySelector('#tensionRail');
+      if (rail) rail.className = 'tension-rail' + (state.difficulty > 3 ? ' escalated' : '');
+      const questionEl = container.querySelector('#practiceQuestion');
+      if (questionEl) questionEl.textContent = state.question.q;
+      const optionsEl = container.querySelector('#practiceOptions');
+      if (optionsEl) {
+        optionsEl.innerHTML = '';
+        state.question.options.forEach((opt, idx) => {
+          const btn = document.createElement('button');
+          btn.className = 'option' + (state.lockout ? ' locked' : '');
+          btn.textContent = opt;
+          btn.addEventListener('click', () => {
+            if (!state.lockout) AppState.gameSession.submitAnswer(idx);
+          });
+          optionsEl.appendChild(btn);
+        });
+      }
+      const scoreEl = container.querySelector('#practiceScore');
+      if (scoreEl) scoreEl.textContent = state.score;
+    }
+
+    // ----- ARENA & TOURNAMENT (similar UI, using engine with mode 'arena'/'tournament') -----
+    function renderArena(container) {
+      if (!AppState.currentUser) { navigateTo('auth'); return; }
+      container.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:1rem; height:100%;">
+          <h2 class="mono">LIVE CBT ARENA</h2>
+          <div id="arenaGameArea" style="flex:1; display:flex; flex-direction:column; gap:1rem;">
+            <div class="tension-rail" id="arenaTensionRail"></div>
+            <div class="timer-display" id="arenaTimer">8</div>
+            <div class="question-box" id="arenaQuestion"></div>
+            <div class="options-grid" id="arenaOptions"></div>
+            <div class="telemetry">Score: <span id="arenaScore">0</span></div>
+            <div id="lockoutOverlay" style="display:none;" class="lockout-overlay">LOCKED</div>
+            <button class="btn-primary" id="quitArenaBtn">LEAVE ARENA</button>
+          </div>
+        </div>
+      `;
+      const engine = new CBTEngine('arena');
+      AppState.gameSession = engine;
+      engine.onUpdate = (state) => {
+        updateCompetitiveUI(container, state);
+      };
+      engine.onSessionEnd = (score) => alert(`Arena match over! Score: ${score}`);
+      engine.startSession();
+      container.querySelector('#quitArenaBtn').addEventListener('click', () => {
+        engine.stopSession();
+        navigateTo('dashboard');
+      });
+    }
+
+    function renderTournament(container) {
+      if (!AppState.currentUser) { navigateTo('auth'); return; }
+      container.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:1rem; height:100%;">
+          <h2 class="mono">TOURNAMENT</h2>
+          <div class="bracket" id="bracketDisplay"></div>
+          <div id="tournamentGameArea" style="flex:1; display:flex; flex-direction:column; gap:1rem;">
+            <div class="tension-rail" id="tourneyTensionRail"></div>
+            <div class="timer-display" id="tourneyTimer">8</div>
+            <div class="question-box" id="tourneyQuestion"></div>
+            <div class="options-grid" id="tourneyOptions"></div>
+            <div class="telemetry">Score: <span id="tourneyScore">0</span></div>
+            <div id="tourneyLockoutOverlay" style="display:none;" class="lockout-overlay">LOCKED</div>
+            <button class="btn-primary" id="quitTourneyBtn">LEAVE TOURNAMENT</button>
+          </div>
+        </div>
+      `;
+      // Show bracket
+      const bracketDiv = container.querySelector('#bracketDisplay');
+      bracketDiv.innerHTML = AppState.tournamentBracket.map(m => `<div class="bracket-match"><span>${m.match}</span><span>${m.status}</span></div>`).join('');
+      const engine = new CBTEngine('tournament');
+      AppState.gameSession = engine;
+      engine.onUpdate = (state) => {
+        updateCompetitiveUI(container, state);
+      };
+      engine.onSessionEnd = (score) => alert(`Tournament round over! Score: ${score}`);
+      engine.startSession();
+      container.querySelector('#quitTourneyBtn').addEventListener('click', () => {
+        engine.stopSession();
+        navigateTo('dashboard');
+      });
+    }
+
+    function updateCompetitiveUI(container, state) {
+      const timerEl = container.querySelector('[id$="Timer"]');
+      if (timerEl) {
+        timerEl.textContent = state.timer;
+        timerEl.className = 'timer-display' + (state.timer <= 3 ? ' warning' : '');
+      }
+      const rail = container.querySelector('[id$="TensionRail"]');
+      if (rail) rail.className = 'tension-rail' + (state.difficulty > 3 ? ' escalated' : '');
+      const questionEl = container.querySelector('[id$="Question"]');
+      if (questionEl) questionEl.textContent = state.question.q;
+      const optionsEl = container.querySelector('[id$="Options"]');
+      if (optionsEl) {
+        optionsEl.innerHTML = '';
+        state.question.options.forEach((opt, idx) => {
+          const btn = document.createElement('button');
+          btn.className = 'option' + (state.lockout ? ' locked' : '');
+          btn.textContent = opt;
+          btn.addEventListener('click', () => {
+            if (!state.lockout) AppState.gameSession.submitAnswer(idx);
+          });
+          optionsEl.appendChild(btn);
+        });
+      }
+      const scoreEl = container.querySelector('[id$="Score"]');
+      if (scoreEl) scoreEl.textContent = state.score;
+      const lockoutOverlay = container.querySelector('[id$="LockoutOverlay"]');
+      if (lockoutOverlay) lockoutOverlay.style.display = state.lockout ? 'flex' : 'none';
+    }
+
+    // ----- CLAN DASHBOARD (with rank gate, roster, chat) -----
+    function renderClan(container) {
+      const user = AppState.currentUser;
+      const clan = AppState.clans[user.clanId];
+      const isSandbox = user.rank < 3.00;
+      const leagueClans = ['A','B','C','D','E','F','G'];
+      container.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:1rem; height:100%;">
+          <h2 class="mono">CLAN CORE: ${clan.name}</h2>
+          <div class="telemetry">Combined Worth: ${clan.combinedPoints.toLocaleString()} PTS (μ=1/√N) | ${clan.placement}</div>
+          <div class="hr"></div>
+          <div id="clanGate">
+            ${isSandbox ? `
+              <div class="clan-lock">[LOCK // ACCESSIBLE_AT_RANK_3.00]</div>
+              <p>You are in Sandbox Clan ${user.clanId.split('_')[1]}</p>
+            ` : `
+              <div>League Clans unlocked! Select:</div>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                ${leagueClans.map(c => `<button class="btn-primary league-clan-btn" data-clan="league_${c}">Clan ${c}</button>`).join('')}
+              </div>
+            `}
+          </div>
+          <button class="btn-primary" id="viewRosterBtn">VIEW_OPERATORS</button>
+          <div class="chat-messages" id="clanChatMessages">
+            ${AppState.chatMessages.map(m => `<div><b>${m.user}:</b> ${m.text}</div>`).join('')}
+          </div>
+          <div class="chat-input">
+            <input type="text" id="chatInputField" placeholder="Type message...">
+            <button id="sendChatBtn" class="btn-primary">SEND</button>
+          </div>
+          <button class="btn-primary" id="backToDashboardBtn">← BACK TO DASHBOARD</button>
+        </div>
+        <!-- Roster Overlay -->
+        <div class="roster-overlay" id="rosterOverlay">
+          <button id="closeRosterBtn" style="margin-bottom:1rem;">CLOSE ✕</button>
+          <h3 class="mono">OPERATORS</h3>
+          <div id="rosterList"></div>
+        </div>
+      `;
+
+      // Roster overlay logic
+      container.querySelector('#viewRosterBtn').addEventListener('click', () => {
+        const overlay = container.querySelector('#rosterOverlay');
+        const list = container.querySelector('#rosterList');
+        const members = clan.members.map(uid => AppState.users.find(u => u.id === uid));
+        list.innerHTML = members.map(m => `
+          <div class="border-1" style="padding:0.5rem; margin:0.3rem 0; display:flex; justify-content:space-between;">
+            <span>${m.name} (${m.avatar})</span>
+            <span class="telemetry">${m.points} PTS | ${m.rank.toFixed(2)}</span>
+            <span style="color:${m.id === user.id ? 'var(--color-accent-scientist)' : 'var(--color-border-rail)'}">${m.id === user.id ? 'ONLINE' : 'OFFLINE'}</span>
+          </div>
+        `).join('');
+        overlay.classList.add('open');
+      });
+      container.querySelector('#closeRosterBtn').addEventListener('click', () => {
+        container.querySelector('#rosterOverlay').classList.remove('open');
+      });
+
+      // Chat simulation
+      container.querySelector('#sendChatBtn').addEventListener('click', () => {
+        const input = container.querySelector('#chatInputField');
+        const msg = input.value.trim();
+        if (msg) {
+          AppState.chatMessages.push({ user: user.name, text: msg, timestamp: Date.now() });
+          input.value = '';
+          updateChatDisplay(container);
+        }
+      });
+      // Simulate incoming messages
+      setInterval(() => {
+        if (AppState.currentView === 'clan' && Math.random() < 0.3) {
+          AppState.chatMessages.push({ user: 'BOT_ClanMate', text: 'Coordinated!', timestamp: Date.now() });
+          if (document.querySelector('#clanChatMessages')) updateChatDisplay(document.querySelector('#clanCoreContainer') || document.getElementById('app').querySelector('.view.active'));
+        }
+      }, 5000);
+
+      container.querySelector('#backToDashboardBtn').addEventListener('click', () => navigateTo('dashboard', 'back'));
+    }
+
+    function updateChatDisplay(container) {
+      const chatDiv = container.querySelector('#clanChatMessages');
+      if (chatDiv) {
+        chatDiv.innerHTML = AppState.chatMessages.slice(-10).map(m => `<div><b>${m.user}:</b> ${m.text}</div>`).join('');
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+      }
+    }
+
+    // ----- INITIALIZATION -----
+    function initApp() {
+      // Load test user (or could start at landing)
+      navigateTo('landing');
+    }
+
+    window.addEventListener('load', initApp);
+
+    // Global back navigation via browser history (simple)
+    window.addEventListener('popstate', () => {
+      // Not fully implemented for brevity; we rely on in-app navigation buttons.
+    });
+  </script>
+</body>
+</html>
