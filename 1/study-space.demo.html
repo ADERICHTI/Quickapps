@@ -1,632 +1,812 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>STUDY SPACE // Code & Conquer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>STUDY SPACE // NEURAL TERMINAL</title>
   <style>
-    /* ----- GLOBAL DESIGN TOKENS (Core Spec) ----- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ----- HARD-CODED DESIGN SYSTEM TOKENS (SYNTACTIC FLUIDITY) ----- */
     :root {
-      --color-canvas-primary: #08090A;
-      --color-surface-widget: #121417;
-      --color-accent-scientist: #00F0FF;
-      --color-telemetry-amber: #FFB300;
-      --color-border-rail: #1E222B;
-      --font-mono: 'Courier New', 'Fira Code', monospace;
-      --font-sans: 'Google Sans', 'Inter', system-ui, -apple-system, sans-serif;
-      --transition-sweep: cubic-bezier(0.25, 1, 0.5, 1);
-      --scale-micro: transform 80ms ease;
-      --radius-sm: 12px;
-      --radius-md: 20px;
-    }
-    [data-theme="light"] {
-      --color-canvas-primary: #F8F9FA;
-      --color-surface-widget: #FFFFFF;
-      --color-accent-scientist: #0055FF;
-      --color-telemetry-amber: #D97706;
-      --color-border-rail: #E2E8F0;
+      --bg-primary: #08090A;
+      --surface-widget: #121417;
+      --accent-scientist: #00F0FF;
+      --telemetry-amber: #FFB300;
+      --border-rail: #1E222B;
+      --text-main: #E2E8F0;
+      --text-muted: #64748B;
+      --font-mono: 'Courier New', 'SF Mono', 'Fira Code', monospace;
+      --font-sans: system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', sans-serif;
+      --curve-sweep: cubic-bezier(0.25, 1, 0.5, 1);
     }
 
-    * { margin:0; padding:0; box-sizing:border-box; }
     body {
-      background: var(--color-canvas-primary);
-      color: var(--color-accent-scientist);
+      background-color: var(--bg-primary);
       font-family: var(--font-sans);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
       overflow: hidden;
-      transition: background 0.3s, color 0.3s;
+      height: 100vh;
+      width: 100vw;
+      position: fixed;
     }
-    #app {
-      width: 100%; max-width: 420px; height: 100vh; position: relative;
-      overflow: hidden; border-left: 1px solid var(--color-border-rail);
-      border-right: 1px solid var(--color-border-rail);
-      background: var(--color-canvas-primary);
-      display: flex; flex-direction: column;
-    }
-    * { box-shadow: none !important; } /* Zero shadows, as per spec */
 
-    /* ----- TELEMETRY & TYPOGRAPHY ----- */
-    .telemetry, .mono, .points, .rank, .counter, .timer {
-      font-family: var(--font-mono); font-weight: bold; letter-spacing: -0.5px;
+    /* Main App Container (mirrors RN structure) */
+    .master-canvas {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-primary);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
-    h2, h3 { font-family: var(--font-sans); font-weight: 600; }
 
-    /* ----- BUTTONS & INTERACTIONS (Google playfulness) ----- */
-    button, .clickable {
-      transition: var(--scale-micro); cursor: pointer; border: 1px solid transparent;
-      background: transparent; color: inherit; font-family: inherit;
-      border-radius: var(--radius-sm); outline: none;
+    /* Scrollable content area (matches ScrollView) */
+    .scroll-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 20px 100px 20px;
+      scroll-behavior: smooth;
     }
-    button:active, .clickable:active { transform: scale(1.04); }
-    .btn-primary {
-      border: 1px solid var(--color-accent-scientist);
-      color: var(--color-accent-scientist); background: rgba(0,240,255,0.05);
-      padding: 0.8rem 1.6rem; font-size: 1rem; text-transform: uppercase;
-      letter-spacing: 1.5px; text-align: center; border-radius: var(--radius-md);
+
+    /* Custom scrollbar (minimal) */
+    .scroll-container::-webkit-scrollbar {
+      width: 4px;
+    }
+    .scroll-container::-webkit-scrollbar-track {
+      background: var(--border-rail);
+    }
+    .scroll-container::-webkit-scrollbar-thumb {
+      background: var(--accent-scientist);
+      border-radius: 4px;
+    }
+
+    /* ----- HUD HEADER ----- */
+    .hud-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 60px 20px 20px 20px;
+      border-bottom: 1px solid var(--border-rail);
+      background-color: var(--bg-primary);
+      flex-shrink: 0;
+    }
+    .operator-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+    }
+    .username-text {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--text-main);
+      margin-top: 2px;
+    }
+    .telemetry-block {
+      align-items: flex-end;
+      background-color: #0F172A;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-rail);
+    }
+    .telemetry-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--accent-scientist);
+    }
+    .telemetry-value {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--text-main);
+    }
+
+    /* ----- CARDS & GLOBAL COMPONENTS ----- */
+    .gaming-card {
+      background-color: var(--surface-widget);
+      border-radius: 16px;
+      padding: 20px;
+      margin-top: 20px;
+      border: 1px solid var(--border-rail);
+    }
+    .accent-border-rail {
+      border-color: var(--accent-scientist);
+    }
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+    }
+    .pulse-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 3px;
+      background-color: var(--accent-scientist);
+      animation: subtlePulse 1.4s infinite;
+    }
+    @keyframes subtlePulse {
+      0% { opacity: 0.4; transform: scale(0.8);}
+      100% { opacity: 1; transform: scale(1.2);}
+    }
+    .rank-big-display {
+      font-family: var(--font-mono);
+      font-size: 42px;
+      font-weight: bold;
+      color: var(--text-main);
+      margin: 12px 0 8px 0;
+    }
+    .rank-max-cap {
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+    .progress-bar-rail {
+      height: 4px;
+      background-color: #1E293B;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background-color: var(--accent-scientist);
+      width: 0%;
+      transition: width 0.2s ease;
+    }
+    .card-footer-text {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--telemetry-amber);
+    }
+    .clan-data-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-top: 12px;
+    }
+    .clan-name {
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--text-main);
+    }
+    .clan-rank-telemetry {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--accent-scientist);
+    }
+    .clan-points {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 4px 0 16px 0;
+    }
+    .secondary-card-button {
+      border: 1px solid var(--border-rail);
+      border-radius: 10px;
+      padding: 12px;
+      align-items: center;
+      background-color: #0A0C0E;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .secondary-card-button:active {
+      background-color: #1A1E26;
+    }
+    .secondary-button-text {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-main);
       font-weight: 600;
     }
-    .btn-primary.large { padding: 1.2rem 2rem; font-size: 1.3rem; }
-
-    /* ----- VIEW SWEEP TRANSITION ----- */
-    .view {
-      position: absolute; top:0; left:0; width:100%; height:100%;
-      display: flex; flex-direction: column; background: var(--color-canvas-primary);
-      transition: transform 0.4s var(--transition-sweep), opacity 0.3s;
-      will-change: transform; overflow-y: auto; padding: 1rem;
+    .section-label {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      margin-top: 28px;
+      margin-bottom: 8px;
+      padding-left: 4px;
     }
-    .view.hidden { transform: translateX(100%); opacity:0; pointer-events:none; }
-    .view.active { transform: translateX(0); opacity:1; pointer-events:auto; }
-    .view.sweep-left { transform: translateX(-100%); }
-
-    /* ----- CARD STYLE (CodeWars clean + Google rounded) ----- */
-    .card {
-      background: var(--color-surface-widget); border: 1px solid var(--color-border-rail);
-      border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 0.8rem;
-      transition: border-color 0.2s;
+    /* PRIMARY LAUNCH BUTTON (with scale animation) */
+    .primary-launch-button {
+      background-color: #002B36;
+      border: 1px solid var(--accent-scientist);
+      border-radius: 12px;
+      padding: 22px 20px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.1s;
+      will-change: transform;
     }
-    .card.accent-left { border-left: 4px solid var(--color-accent-scientist); }
-    .card.amber-left { border-left: 4px solid var(--color-telemetry-amber); }
-
-    /* ----- BOTTOM NAVIGATION (Material-like) ----- */
-    .bottom-nav {
-      display: flex; justify-content: space-around; padding: 0.8rem 0;
-      border-top: 1px solid var(--color-border-rail); margin-top: auto;
-      background: var(--color-surface-widget);
+    .launch-button-text {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--accent-scientist);
+      letter-spacing: 1px;
     }
-    .nav-icon {
-      display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
-      font-size: 0.7rem; color: var(--color-border-rail); text-transform: uppercase;
-      background: transparent; border: none; opacity: 0.7;
+    .launch-button-subtext {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-main);
+      margin-top: 4px;
+      opacity: 0.8;
     }
-    .nav-icon.active { color: var(--color-accent-scientist); opacity:1; }
-    .nav-icon .emoji { font-size: 1.4rem; }
-
-    /* ----- LEADERBOARD SNIPPET ----- */
-    .leaderboard-item {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 0.6rem 0; border-bottom: 1px solid var(--color-border-rail);
+    .split-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
     }
-
-    /* ----- STREAK FLAME ANIMATION ----- */
-    .streak-badge {
-      display: inline-flex; align-items: center; gap: 0.3rem;
-      background: rgba(255,179,0,0.15); padding: 0.3rem 0.8rem; border-radius: 20px;
-      border: 1px solid var(--color-telemetry-amber);
+    .split-card {
+      flex: 1;
+      background-color: var(--surface-widget);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid var(--border-rail);
+      cursor: pointer;
+      transition: opacity 0.1s;
     }
-    @keyframes flicker {
-      0% { opacity:1; transform:scale(1); } 50% { opacity:0.8; transform:scale(1.1); } 100% { opacity:1; transform:scale(1); }
+    .split-card:active {
+      opacity: 0.7;
     }
-    .streak-fire { display:inline-block; animation: flicker 0.5s infinite; }
-
-    /* ----- GAME ENGINE UI (shared) ----- */
-    .tension-rail {
-      height: 6px; background: var(--color-accent-scientist);
-      border-radius: 3px; transition: background 0.3s;
+    .split-card-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--text-main);
     }
-    .tension-rail.escalated { background: var(--color-telemetry-amber); }
-    .question-box {
-      border: 1px solid var(--color-border-rail); border-radius: var(--radius-sm);
-      padding: 1.2rem; background: var(--color-surface-widget); font-size: 1.1rem;
-    }
-    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .option {
-      border: 1px solid var(--color-border-rail); border-radius: var(--radius-sm);
-      padding: 0.8rem; text-align: center; background: var(--color-surface-widget);
-      font-weight: 500;
-    }
-    .option.locked {
-      opacity:0.5; pointer-events:none; border-color: var(--color-telemetry-amber);
-      position:relative;
-    }
-    .option.locked::after {
-      content: "🔒"; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-      font-size: 1.2rem;
-    }
-    .timer-display {
-      font-size: 2.5rem; text-align: center; font-family: var(--font-mono);
-      color: var(--color-accent-scientist); font-weight: 700;
-    }
-    .timer-display.warning { color: var(--color-telemetry-amber); animation: pulse 0.5s infinite; }
-    @keyframes pulse {
-      0% { transform:scale(1); } 50% { transform:scale(1.08); } 100% { transform:scale(1); }
-    }
-    .lockout-overlay {
-      position: absolute; top:0; left:0; right:0; bottom:0;
-      background: rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center;
-      font-family: var(--font-mono); color: var(--color-telemetry-amber); font-size:1.5rem;
-      border-radius: var(--radius-sm); z-index:10;
+    .split-card-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
     }
 
-    /* ----- CLAN GATE LOCK ----- */
-    .clan-lock {
-      border: 1px solid var(--color-border-rail); border-radius: var(--radius-sm);
-      padding: 1rem; text-align: center; color: var(--color-telemetry-amber);
-      background: var(--color-surface-widget); font-family: var(--font-mono);
+    /* BOTTOM DOCK (fixed) */
+    .bottom-dock-navbar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 75px;
+      background-color: var(--surface-widget);
+      border-top: 1px solid var(--border-rail);
+      flex-direction: row;
+      justify-content: space-around;
+      align-items: center;
+      padding-bottom: 15px;
+      display: flex;
+      z-index: 10;
+    }
+    .dock-item-active {
+      padding: 8px 16px;
+      border-radius: 8px;
+      background-color: #1E293B;
+      border: 1px solid var(--accent-scientist);
+    }
+    .dock-text-active {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--accent-scientist);
+    }
+    .dock-item {
+      padding: 8px 16px;
+      cursor: pointer;
+    }
+    .dock-text-muted {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--text-muted);
     }
 
-    /* ----- ROSTER OVERLAY ----- */
-    .roster-overlay {
-      position: fixed; top:0; left:0; right:0; bottom:0;
-      background: var(--color-canvas-primary); z-index:20; overflow-y:auto; padding:1rem;
-      transform: translateX(100%); transition: transform 0.3s var(--transition-sweep);
+    /* ----- MODAL / BOTTOM SHEET SYSTEM (overlay + animated sheet) ----- */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(3px);
+      justify-content: flex-end;
+      z-index: 1000;
+      display: none;
+      align-items: flex-end;
     }
-    .roster-overlay.open { transform: translateX(0); }
+    .bottom-sheet {
+      background-color: var(--surface-widget);
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+      border: 1px solid var(--border-rail);
+      width: 100%;
+      padding: 12px 24px 32px 24px;
+      max-height: 70vh;
+      transform: translateY(100%);
+      transition: transform 0.45s var(--curve-sweep);
+      will-change: transform;
+    }
+    .bottom-sheet.open {
+      transform: translateY(0);
+    }
+    .sheet-handle-rail {
+      width: 40px;
+      height: 4px;
+      background-color: #334155;
+      border-radius: 2px;
+      margin: 0 auto 20px auto;
+    }
+    .sheet-header-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--text-main);
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+    .chat-stream-placeholder {
+      background-color: #0A0C0E;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid var(--border-rail);
+      min-height: 120px;
+      margin-bottom: 20px;
+    }
+    .chat-message-item {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+    .chat-user {
+      color: var(--accent-scientist);
+      font-weight: bold;
+    }
+    .sheet-warning-text {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--telemetry-amber);
+      background-color: rgba(255, 179, 0, 0.1);
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 179, 0, 0.2);
+    }
+    .admin-toggle-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      background-color: #0A0C0E;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border-rail);
+      margin-bottom: 12px;
+    }
+    .toggle-main-label {
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--text-main);
+    }
+    .toggle-sub-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .fake-toggle-active {
+      background-color: #065F46;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #34D399;
+    }
+    .fake-toggle-inactive {
+      background-color: #1E293B;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--text-muted);
+    }
+    .toggle-text {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: bold;
+      color: var(--text-main);
+    }
+    .close-sheet-button {
+      background-color: #1E222B;
+      border-radius: 10px;
+      padding: 14px;
+      align-items: center;
+      margin-top: 16px;
+      border: 1px solid var(--border-rail);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .close-sheet-button:active {
+      background-color: #2A2F3A;
+    }
+    .close-button-text {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-main);
+      font-weight: bold;
+    }
 
-    /* ----- CHAT ----- */
-    .chat-messages {
-      border:1px solid var(--color-border-rail); border-radius:var(--radius-sm);
-      height:120px; overflow-y:auto; padding:0.5rem; background:var(--color-surface-widget);
-      font-family: var(--font-mono); font-size:0.8rem;
+    /* Hide content groups accordingly */
+    .sheet-chat-content, .sheet-admin-content {
+      display: none;
     }
-    .chat-input { display:flex; gap:0.5rem; margin-top:0.5rem; }
-    .chat-input input {
-      flex:1; background:transparent; border:1px solid var(--color-border-rail);
-      padding:0.5rem; border-radius:var(--radius-sm); color:inherit; font-family:inherit;
+    .sheet-chat-content.active, .sheet-admin-content.active {
+      display: block;
     }
 
-    /* ----- FOCUS WARNING ----- */
-    .focus-warning {
-      position:fixed; top:10px; left:50%; transform:translateX(-50%);
-      background:var(--color-telemetry-amber); color:black; padding:0.5rem 1rem;
-      border-radius:var(--radius-sm); font-family:var(--font-mono); z-index:30; display:none;
+    /* misc */
+    .space-bottom {
+      margin-top: 8px;
     }
-
-    /* ----- CELEBRATION CONFETTI (simple CSS sparkle) ----- */
-    .celebrate {
-      position:relative;
+    button, .clickable {
+      cursor: pointer;
+      user-select: none;
     }
-    .celebrate::after {
-      content:"✨🎉"; position:absolute; top:-10px; right:-20px; font-size:1.5rem;
-      animation: pop 0.4s ease-out;
-    }
-    @keyframes pop {
-      0% { transform:scale(0); opacity:0; } 50% { transform:scale(1.4); opacity:1; } 100% { transform:scale(1); opacity:0; }
+    a, div, span {
+      user-select: none;
     }
   </style>
 </head>
 <body>
-  <div id="app"></div>
-  <div class="focus-warning" id="focus-warning">⚠️ FOCUS LOST – PENALTY</div>
-  <script>
-    // ===================== STUDY SPACE SPA (Google × CodeWars Edition) =====================
-    const AppState = {
-      currentUser: null,
-      users: [
-        { id:'u1', name:'Alex Neural', email:'operator@studyspace.com', password:'password123', points:14500, rank:4.12, avatar:'AN', clanId:'sandbox_1A', lastActive:Date.now(), streak:5 },
-        { id:'u2', name:'Sam Synapse', email:'sam@s.com', password:'test', points:2500, rank:2.15, avatar:'SS', clanId:'sandbox_1B', lastActive:Date.now()-90000000, streak:0 },
-        { id:'u3', name:'Jordan Cortex', email:'j@s.com', password:'test', points:80000, rank:7.83, avatar:'JC', clanId:'league_A', lastActive:Date.now(), streak:12 }
-      ],
-      clans: {
-        sandbox_1A: { name:'Neuron Knights', members:['u1'], combinedPoints:14500, placement:'#5' },
-        sandbox_1B: { name:'Synaptic Striders', members:['u2'], combinedPoints:2500, placement:'#12' },
-        league_A: { name:'Cortex Collective', members:['u3'], combinedPoints:80000, placement:'#1' }
-      },
-      tournamentBracket: [
-        { match:'Neuron Knights vs Synaptic Striders', status:'upcoming' },
-        { match:'Cortex Collective vs Axon Alliance', status:'live' }
-      ],
-      chatMessages: [{ user:'SYSTEM', text:'Welcome to Clan Chat.', timestamp:Date.now() }],
-      currentView: 'landing',
-      gameSession: null,
-      practiceTimerMode: 'auto',
-      customTimerSeconds: 10
-    };
+<div class="master-canvas" id="appRoot">
+  <!-- Top Profile HUD -->
+  <div class="hud-header">
+    <div>
+      <div class="operator-label">OPERATOR PROFILE</div>
+      <div class="username-text">STEPHEN_X26</div>
+    </div>
+    <div class="telemetry-block">
+      <div class="telemetry-label">WORTH.PTS</div>
+      <div class="telemetry-value" id="academicWorthDisplay">14,500</div>
+    </div>
+  </div>
 
-    // ----- THEME & ROUTING -----
-    function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); }
-    function navigateTo(viewName, direction='forward') {
-      const app = document.getElementById('app');
-      const current = app.querySelector('.view.active');
-      if (current) {
-        current.classList.remove('active'); current.classList.add('hidden');
-        if (direction === 'back') current.classList.add('sweep-left');
-        setTimeout(() => { current.remove(); renderView(viewName); }, 100);
-      } else renderView(viewName);
-    }
+  <!-- Scrollable core content -->
+  <div class="scroll-container" id="scrollContainer">
+    <!-- MAIN RANK CARD -->
+    <div class="gaming-card accent-border-rail">
+      <div class="card-header-row">
+        <div class="card-title">CONTINUOUS RANK MATRIX</div>
+        <div class="pulse-indicator"></div>
+      </div>
+      <div class="rank-big-display">
+        <span id="rankValue">4.82</span> <span class="rank-max-cap">/ 10.00</span>
+      </div>
+      <div class="progress-bar-rail">
+        <div class="progress-bar-fill" id="rankProgressFill"></div>
+      </div>
+      <div class="card-footer-text">[SYSTEM LOG] Linear Velocity region active. Piecewise brake engages at 5.00.</div>
+    </div>
 
-    function renderView(name) {
-      const app = document.getElementById('app');
-      const view = document.createElement('div'); view.className='view active';
-      view.dataset.view = name;
-      switch(name) {
-        case 'landing': renderLanding(view); break;
-        case 'auth': renderAuth(view); break;
-        case 'dashboard': renderDashboard(view); break;
-        case 'practice': renderPractice(view); break;
-        case 'arena': renderArena(view); break;
-        case 'tournament': renderTournament(view); break;
-        case 'clan': renderClan(view); break;
-        default: break;
-      }
-      app.appendChild(view);
-      AppState.currentView = name;
-    }
+    <!-- CLAN STATUS WIDGET -->
+    <div class="gaming-card">
+      <div class="card-title">CURRENT SQUADRON (CLAN)</div>
+      <div class="clan-data-row">
+        <div class="clan-name">NEURON_KNIGHTS</div>
+        <div class="clan-rank-telemetry">#3 GLOBAL</div>
+      </div>
+      <div class="clan-points">250,000 PTS aggregate</div>
+      <div class="secondary-card-button" id="openChatButton">
+        <div class="secondary-button-text">// ACCESS COMMUNICATIONS TERMINAL</div>
+      </div>
+    </div>
 
-    // ----- LANDING (terminal gate, Google-styled) -----
-    function renderLanding(container) {
-      container.innerHTML = `
-        <button class="theme-toggle" id="themeToggleLanding" style="position:absolute; top:1rem; right:1rem; font-size:1.5rem;">🌓</button>
-        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:2rem;">
-          <div class="scramble-title mono" id="scrambleTitle" style="font-size:3rem; font-weight:900; color:var(--color-accent-scientist);">STUDY SPACE</div>
-          <p style="opacity:0.8; font-family:var(--font-sans);">Code battles. Clan wars. Glory.</p>
-          <button class="btn-primary large" id="initSessionBtn">INITIALIZE SESSION</button>
+    <!-- MAIN ACTION INTERFACE AREA -->
+    <div class="section-label">DEPLOYMENT SLOTS</div>
+    <div id="launchButtonWrapper">
+      <div class="primary-launch-button" id="primaryLaunchBtn">
+        <div class="launch-button-text">ENTER LIVE CBT ARENA</div>
+        <div class="launch-button-subtext">MULTIPLAYER MATCHMAKING // HIGH STAKES</div>
+      </div>
+    </div>
+
+    <div class="split-row">
+      <div class="split-card" id="soloPracticeBtn">
+        <div class="split-card-title">SOLO PRACTICE</div>
+        <div class="split-card-desc">Train against AI mentors safely.</div>
+      </div>
+      <div class="split-card" id="airtimeHubBtn">
+        <div class="split-card-title">AIRTIME HUB</div>
+        <div class="split-card-desc">Redeem points for active vouchers.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM DOCK NAVBAR -->
+  <div class="bottom-dock-navbar">
+    <div class="dock-item-active">
+      <div class="dock-text-active">DASHBOARD</div>
+    </div>
+    <div class="dock-item" id="adminDockBtn">
+      <div class="dock-text-muted">SECURE ADMIN</div>
+    </div>
+  </div>
+
+  <!-- MODAL / BOTTOM SHEET OVERLAY -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="bottom-sheet" id="bottomSheet">
+      <div class="sheet-handle-rail"></div>
+      <!-- CHAT CONTENT -->
+      <div id="chatContentGroup" class="sheet-chat-content">
+        <div class="sheet-header-title">SQUADRON MESSAGES // LIVE_TRAFFIC</div>
+        <div class="chat-stream-placeholder">
+          <div class="chat-message-item"><span class="chat-user">[BOT_ALPHA]:</span> Strategy initiated. Prepare for the CBT Arena lockout loop.</div>
+          <div class="chat-message-item"><span class="chat-user">[SYS]:</span> Atomic state synchronization updated in 34ms.</div>
         </div>
-      `;
-      scrambleText(container.querySelector('#scrambleTitle'), 'STUDY SPACE', 400);
-      container.querySelector('#themeToggleLanding').addEventListener('click', ()=>{
-        applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
-      });
-      container.querySelector('#initSessionBtn').addEventListener('click', ()=>navigateTo('auth'));
-    }
-
-    function scrambleText(el, final, dur) {
-      const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let i=0; const max=10, intv=dur/max;
-      const t=setInterval(()=>{
-        el.textContent=final.split('').map((c,idx)=>idx<i?final[idx]:chars[Math.floor(Math.random()*chars.length)]).join('');
-        if(++i>=max){clearInterval(t);el.textContent=final;}
-      },intv);
-    }
-
-    // ----- AUTH GATE -----
-    function renderAuth(container) {
-      container.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:1.2rem; margin-top:3rem; padding:1rem;">
-          <h2 class="mono" style="text-align:center;">AUTH GATE</h2>
-          <input id="authEmail" placeholder="OPERATOR_ID" class="mono" style="padding:0.8rem; background:transparent; border:1px solid var(--color-border-rail); border-radius:12px; color:inherit;">
-          <input id="authPassword" type="password" placeholder="ACCESS_PASSPHRASE" class="mono" style="padding:0.8rem; background:transparent; border:1px solid var(--color-border-rail); border-radius:12px; color:inherit;">
-          <div id="authError" style="color:var(--color-telemetry-amber); min-height:1.2rem;"></div>
-          <button class="btn-primary" id="authLoginBtn">AUTHENTICATE</button>
-          <button style="margin-top:0.5rem; opacity:0.7;" id="authBackBtn">← TERMINAL</button>
+        <div class="close-sheet-button" id="closeSheetBtnChat">
+          <div class="close-button-text">CLOSE TRANSMISSION</div>
         </div>
-      `;
-      container.querySelector('#authLoginBtn').addEventListener('click', ()=>{
-        const email=container.querySelector('#authEmail').value.trim();
-        const pass=container.querySelector('#authPassword').value;
-        const err=container.querySelector('#authError');
-        if(!email||!pass){ err.textContent='ERR: FIELDS REQUIRED'; return; }
-        const user=AppState.users.find(u=>u.email===email&&u.password===pass);
-        if(user){
-          AppState.currentUser=user;
-          applyDecay(user);
-          container.querySelector('#authLoginBtn').style.borderColor='var(--color-accent-scientist)';
-          setTimeout(()=>navigateTo('dashboard'),300);
-        }else err.textContent='ERR: INVALID CREDENTIALS';
-      });
-      container.querySelector('#authBackBtn').addEventListener('click',()=>navigateTo('landing','back'));
-    }
-
-    function applyDecay(user) {
-      const now=Date.now(), td=86400000, lambda=0.1;
-      if(now-user.lastActive > td) {
-        const t=(now-user.lastActive-td)/3600000;
-        user.points=Math.floor(user.points*Math.exp(-lambda*t));
-        user.lastActive=now;
-        user.rank=calculateRank(user.points);
-      }
-    }
-
-    function calculateRank(p) {
-      if(p<0)return 1.0;
-      const cost=3000;
-      if(p<=cost*3.99) return 1 + p/cost;
-      const extra=p-cost*3.99;
-      return Math.min(10, 5+(5*Math.log(1+extra/1000))/Math.log(1+50000/1000));
-    }
-
-    // ----- DASHBOARD (CodeWars leaderboard tease + Google cards) -----
-    function renderDashboard(container) {
-      const u=AppState.currentUser, clan=AppState.clans[u.clanId];
-      container.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:0.8rem; height:100%;">
-          <div class="card accent-left" style="display:flex; align-items:center; gap:1rem;">
-            <div style="font-size:2rem;">👤</div>
-            <div>
-              <div style="font-weight:600;">${u.name}</div>
-              <div class="telemetry points-large" style="font-size:1.6rem;">${u.points.toLocaleString()} PTS</div>
-              <div class="telemetry">RANK ${u.rank.toFixed(2)}</div>
-            </div>
-            <div style="margin-left:auto;" class="streak-badge"><span class="streak-fire">🔥</span> ${u.streak} day streak</div>
+      </div>
+      <!-- ADMIN CONTENT -->
+      <div id="adminContentGroup" class="sheet-admin-content">
+        <div class="sheet-header-title">INSTITUTIONAL ADMINISTRATION UTILITIES</div>
+        <div class="sheet-warning-text">[WARNING] Engaging these routes activates hardware-level security callbacks.</div>
+        <div class="admin-toggle-row">
+          <div style="flex:1">
+            <div class="toggle-main-label">GPS GEOFENCED E-ATTENDANCE</div>
+            <div class="toggle-sub-label">Runs 3-phase location token verification.</div>
           </div>
-          <div class="card">
-            <div style="font-weight:600;">🏆 Global Leaderboard</div>
-            ${AppState.users.sort((a,b)=>b.points-a.points).slice(0,3).map((usr,idx)=>`
-              <div class="leaderboard-item">
-                <span>${idx+1}. ${usr.name}</span>
-                <span class="telemetry">${usr.points.toLocaleString()} PTS</span>
-              </div>`).join('')}
-          </div>
-          <div class="card amber-left" style="display:flex; justify-content:space-between; align-items:center;">
-            <div><strong>${clan.name}</strong><br><span class="telemetry">${clan.combinedPoints.toLocaleString()} PTS | #${clan.placement}</span></div>
-            <button class="btn-primary" id="openClanBtn">CLAN HALL</button>
-          </div>
-          <div style="display:flex; flex-direction:column; gap:0.5rem;">
-            <button class="btn-primary" id="launchPractice">🧪 PRACTICE SANDBOX</button>
-            <button class="btn-primary" id="enterArena">⚔️ LIVE ARENA</button>
-            <button class="btn-primary" id="registerTournament">🏟️ TOURNAMENT</button>
-          </div>
-          <div class="bottom-nav">
-            <button class="nav-icon active" data-nav="dashboard"><span class="emoji">🏠</span>Home</button>
-            <button class="nav-icon" data-nav="practice"><span class="emoji">🧪</span>Practice</button>
-            <button class="nav-icon" data-nav="arena"><span class="emoji">⚔️</span>Arena</button>
-            <button class="nav-icon" data-nav="tournament"><span class="emoji">🏟️</span>Tournament</button>
-            <button class="nav-icon" data-nav="clan"><span class="emoji">👥</span>Clan</button>
-          </div>
+          <div class="fake-toggle-active"><div class="toggle-text">ACTIVE</div></div>
         </div>
-      `;
-      [...container.querySelectorAll('.nav-icon')].forEach(b=>b.addEventListener('click',(e)=>{
-        const v=e.currentTarget.dataset.nav; if(v!=='dashboard')navigateTo(v);
-      }));
-      container.querySelector('#openClanBtn').addEventListener('click',()=>navigateTo('clan'));
-      container.querySelector('#launchPractice').addEventListener('click',()=>navigateTo('practice'));
-      container.querySelector('#enterArena').addEventListener('click',()=>navigateTo('arena'));
-      container.querySelector('#registerTournament').addEventListener('click',()=>navigateTo('tournament'));
-    }
+        <div class="admin-toggle-row">
+          <div style="flex:1">
+            <div class="toggle-main-label">SECURE CBT DEVICE LOCKDOWN</div>
+            <div class="toggle-sub-label">Intercepts system OS navigation hooks.</div>
+          </div>
+          <div class="fake-toggle-inactive"><div class="toggle-text">READY</div></div>
+        </div>
+        <div class="close-sheet-button" id="closeSheetBtnAdmin">
+          <div class="close-button-text">DISCONNECT HUB</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-    // ============ SHARED CBT ENGINE (with celebration) ============
-    class CBTEngine {
-      constructor(mode, config={}) {
-        this.mode=mode; this.config=config;
-        this.questions=this.generateQuestions();
-        this.currentIndex=0; this.score=0; this.timeLeft=this.getInitialTime();
-        this.timerInterval=null; this.sessionActive=false; this.difficultyLevel=1;
-        this.lockout=false; this.botAnswered=false; this.botTimeout=null;
-        this.onUpdate=null; this.onSessionEnd=null; this.focusPenalty=false;
-        this.setupFocusSafeguard();
+<script>
+  (function(){
+    // ---------- STATE MANAGEMENT ----------
+    let currentRank = 4.82;          // continuous decimal
+    let academicWorth = "14,500";
+    let activeModal = 'none';        // 'none', 'chat', 'admin'
+    
+    // DOM elements
+    const rankValueSpan = document.getElementById('rankValue');
+    const rankProgressFill = document.getElementById('rankProgressFill');
+    const academicWorthDisplay = document.getElementById('academicWorthDisplay');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const bottomSheet = document.getElementById('bottomSheet');
+    const chatGroup = document.getElementById('chatContentGroup');
+    const adminGroup = document.getElementById('adminContentGroup');
+    const openChatButton = document.getElementById('openChatButton');
+    const adminDockBtn = document.getElementById('adminDockBtn');
+    const closeSheetBtnChat = document.getElementById('closeSheetBtnChat');
+    const closeSheetBtnAdmin = document.getElementById('closeSheetBtnAdmin');
+    const primaryLaunchBtn = document.getElementById('primaryLaunchBtn');
+    
+    // Helper: update rank visuals (progress bar + rank text)
+    function updateRankVisuals() {
+      rankValueSpan.innerText = currentRank.toFixed(2);
+      let percent = (currentRank / 10) * 100;
+      rankProgressFill.style.width = `${percent}%`;
+    }
+    
+    // update static worth (can be extended)
+    function updateStaticWorth() {
+      academicWorthDisplay.innerText = academicWorth;
+    }
+    
+    // ----- BOTTOM SHEET LOGIC (with smooth translateY) -----
+    let isAnimatingSheet = false;
+    let sheetOpenFlag = false;
+    
+    function openSheet(type) {
+      if (isAnimatingSheet) return;
+      // set active modal type & update UI groups
+      activeModal = type;
+      if (type === 'chat') {
+        chatGroup.classList.add('active');
+        adminGroup.classList.remove('active');
+      } else if (type === 'admin') {
+        adminGroup.classList.add('active');
+        chatGroup.classList.remove('active');
       }
-      generateQuestions(){ return [
-        { q:'What is 2+2?', options:['3','4','5','6'], correct:1 },
-        { q:'Capital of France?', options:['Berlin','Madrid','Paris','Rome'], correct:2 },
-        { q:'React is a...', options:['Database','Framework','Library','Language'], correct:2 },
-        { q:'Pi to 2 decimals?', options:['3.14','3.16','3.12','2.14'], correct:0 },
-        { q:'H2O is...', options:['Hydrogen','Oxygen','Water','Salt'], correct:2 }
-      ];}
-      getInitialTime(){
-        if(this.mode==='practice'){
-          if(this.config.timerMode==='auto') return Math.max(3,10-this.difficultyLevel*0.5);
-          return this.config.customSeconds>0?this.config.customSeconds:9999;
+      // show overlay (display flex)
+      modalOverlay.style.display = 'flex';
+      // force reflow to trigger transition
+      void modalOverlay.offsetHeight;
+      // add open class to sheet to animate translateY(0)
+      bottomSheet.classList.add('open');
+      sheetOpenFlag = true;
+    }
+    
+    function closeSheet() {
+      if (!sheetOpenFlag || isAnimatingSheet) return;
+      bottomSheet.classList.remove('open');
+      sheetOpenFlag = false;
+      // wait for transition end, then hide overlay
+      const onTransitionEnd = () => {
+        if (!sheetOpenFlag) {
+          modalOverlay.style.display = 'none';
+          activeModal = 'none';
         }
-        return 8-this.difficultyLevel*0.3;
-      }
-      startSession(){
-        this.sessionActive=true; this.currentIndex=0; this.score=0; this.difficultyLevel=1;
-        this.lockout=false; this.botAnswered=false;
-        if(this.onUpdate)this.onUpdate(this.getState());
-        this.startTimer(); if(this.mode!=='practice')this.scheduleBotAnswer();
-      }
-      stopSession(){ this.sessionActive=false; clearInterval(this.timerInterval); clearTimeout(this.botTimeout); }
-      startTimer(){
-        this.timeLeft=this.getInitialTime(); clearInterval(this.timerInterval);
-        this.timerInterval=setInterval(()=>{
-          if(!this.sessionActive)return;
-          this.timeLeft=Math.max(0,this.timeLeft-0.1);
-          if(this.onUpdate)this.onUpdate(this.getState());
-          if(this.timeLeft<=0)this.handleTimeout();
-        },100);
-      }
-      scheduleBotAnswer(){
-        const delay=(this.getInitialTime()*0.6+Math.random()*0.8)*1000;
-        this.botTimeout=setTimeout(()=>{
-          if(this.sessionActive&&!this.lockout&&!this.botAnswered){
-            this.botAnswered=true;
-            const correct=this.questions[this.currentIndex].correct;
-            this.submitAnswer(Math.random()<0.8?correct:(correct+1)%4, true);
-          }
-        },delay);
-      }
-      submitAnswer(choice, isBot=false){
-        if(!this.sessionActive||this.lockout)return;
-        const q=this.questions[this.currentIndex]; const correct=choice===q.correct;
-        if(this.mode!=='practice' && !isBot) this.lockout=true;
-        if(correct){
-          const bonus=this.timeLeft>0?Math.floor(this.timeLeft*10):0;
-          this.score+=100+bonus+this.difficultyLevel*20;
-          // Celebration sparkle on correct answer (handled in UI update)
-          if(this.onUpdate) this.onUpdate({...this.getState(), celebrate:true});
+        bottomSheet.removeEventListener('transitionend', onTransitionEnd);
+        isAnimatingSheet = false;
+      };
+      isAnimatingSheet = true;
+      bottomSheet.addEventListener('transitionend', onTransitionEnd, { once: true });
+      // fallback (in case transitionend never fires)
+      setTimeout(() => {
+        if (activeModal !== 'none' && !sheetOpenFlag) {
+          modalOverlay.style.display = 'none';
+          activeModal = 'none';
+          isAnimatingSheet = false;
         }
-        this.difficultyLevel++;
-        if(this.currentIndex<this.questions.length-1){
-          this.currentIndex++; this.lockout=false; this.botAnswered=false;
-          clearTimeout(this.botTimeout); this.startTimer();
-          if(this.mode!=='practice')this.scheduleBotAnswer();
-        }else{ this.endSession(); }
+      }, 500);
+    }
+    
+    // backdrop click (close)
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) {
+        closeSheet();
       }
-      handleTimeout(){ if(this.sessionActive) this.submitAnswer(-1); }
-      endSession(){
-        this.stopSession();
-        AppState.currentUser.points+=this.score;
-        AppState.currentUser.rank=calculateRank(AppState.currentUser.points);
-        AppState.currentUser.streak+=1;
-        if(this.onSessionEnd)this.onSessionEnd(this.score);
-      }
-      getState(){
-        return { question:this.questions[this.currentIndex], timer:Math.ceil(this.timeLeft),
-          difficulty:this.difficultyLevel, score:this.score, lockout:this.lockout,
-          sessionActive:this.sessionActive, mode:this.mode };
-      }
-      setupFocusSafeguard(){
-        if(this.mode==='arena'||this.mode==='tournament'){
-          document.addEventListener('visibilitychange',()=>{
-            if(document.hidden&&this.sessionActive&&!this.focusPenalty){
-              this.focusPenalty=true; this.score-=200;
-              AppState.currentUser.points=Math.max(0,AppState.currentUser.points-200);
-              document.getElementById('focus-warning').style.display='block';
-              setTimeout(()=>document.getElementById('focus-warning').style.display='none',2000);
-              if(this.onUpdate)this.onUpdate(this.getState());
-            }
-          });
-        }
+    });
+    
+    // close buttons from both modals
+    if (closeSheetBtnChat) closeSheetBtnChat.addEventListener('click', closeSheet);
+    if (closeSheetBtnAdmin) closeSheetBtnAdmin.addEventListener('click', closeSheet);
+    
+    // open chat from clan card
+    openChatButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openSheet('chat');
+    });
+    
+    // open admin from dock
+    adminDockBtn.addEventListener('click', () => {
+      openSheet('admin');
+    });
+    
+    // ----- MICRO-INTERACTION: SCALE ANIMATION ON LAUNCH BUTTON (press in/out) -----
+    let scaleTimer = null;
+    function handlePressIn() {
+      if (primaryLaunchBtn) {
+        primaryLaunchBtn.style.transition = 'transform 80ms cubic-bezier(0.25, 1, 0.5, 1)';
+        primaryLaunchBtn.style.transform = 'scale(1.04)';
       }
     }
-
-    // ----- PRACTICE (dual mode, celebration) -----
-    function renderPractice(container) {
-      container.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:1rem; height:100%;">
-          <h2 class="mono">🧪 PRACTICE SANDBOX</h2>
-          <div id="practiceConfig" class="card">
-            <label class="mono">Timer Mode:</label>
-            <select id="timerModeSelect" class="mono" style="padding:0.5rem; border-radius:8px; background:transparent; border:1px solid var(--color-border-rail);">
-              <option value="auto" ${AppState.practiceTimerMode==='auto'?'selected':''}>Auto (Bot Speed)</option>
-              <option value="custom" ${AppState.practiceTimerMode==='custom'?'selected':''}>Custom</option>
-            </select>
-            <div id="customTimerDiv" style="margin-top:0.5rem; ${AppState.practiceTimerMode==='custom'?'':'display:none;'}">
-              <label class="mono">Seconds (0=No Limit):</label>
-              <input id="customSecondsInput" type="number" value="${AppState.customTimerSeconds}" min="0" step="1" style="width:80px; padding:0.5rem; background:transparent; border:1px solid var(--color-border-rail); border-radius:8px;">
-            </div>
-            <button class="btn-primary" id="startPracticeBtn" style="margin-top:0.8rem;">START</button>
-          </div>
-          <div id="practiceGameArea" style="display:none; flex-direction:column; gap:1rem; flex:1;">
-            <div class="tension-rail" id="tensionRail"></div>
-            <div class="timer-display" id="practiceTimer">10</div>
-            <div class="question-box" id="practiceQuestion"></div>
-            <div class="options-grid" id="practiceOptions"></div>
-            <div class="telemetry">Score: <span id="practiceScore">0</span></div>
-            <button class="btn-primary" id="endPracticeBtn">END</button>
-          </div>
-        </div>
-      `;
-      const modeSel=container.querySelector('#timerModeSelect');
-      modeSel.addEventListener('change',(e)=>{
-        container.querySelector('#customTimerDiv').style.display=e.target.value==='custom'?'block':'none';
-      });
-      container.querySelector('#startPracticeBtn').addEventListener('click',()=>{
-        AppState.practiceTimerMode=modeSel.value;
-        const sec=parseInt(container.querySelector('#customSecondsInput').value,10)||10;
-        AppState.customTimerSeconds=sec;
-        container.querySelector('#practiceConfig').style.display='none';
-        container.querySelector('#practiceGameArea').style.display='flex';
-        const engine=new CBTEngine('practice',{timerMode:AppState.practiceTimerMode, customSeconds:sec});
-        AppState.gameSession=engine;
-        engine.onUpdate=(state)=>updatePracticeUI(container,state);
-        engine.onSessionEnd=(s)=>alert(`Session ended! +${s} PTS`);
-        engine.startSession();
-      });
-      container.querySelector('#endPracticeBtn')?.addEventListener('click',()=>{
-        if(AppState.gameSession)AppState.gameSession.stopSession(); navigateTo('dashboard');
-      });
-    }
-
-    function updatePracticeUI(container,state){
-      const timer=container.querySelector('#practiceTimer'); if(timer){ timer.textContent=state.timer; timer.className='timer-display'+(state.timer<=3?' warning':''); }
-      const rail=container.querySelector('#tensionRail'); if(rail) rail.className='tension-rail'+(state.difficulty>3?' escalated':'');
-      const q=container.querySelector('#practiceQuestion'); if(q) q.textContent=state.question.q;
-      const opts=container.querySelector('#practiceOptions'); if(opts){
-        opts.innerHTML=''; state.question.options.forEach((opt,idx)=>{
-          const btn=document.createElement('button'); btn.className='option'+(state.lockout?' locked':'');
-          btn.textContent=opt; btn.addEventListener('click',()=>{ if(!state.lockout)AppState.gameSession.submitAnswer(idx); });
-          opts.appendChild(btn);
-        });
+    function handlePressOut() {
+      if (primaryLaunchBtn) {
+        primaryLaunchBtn.style.transition = 'transform 120ms cubic-bezier(0.25, 1, 0.5, 1)';
+        primaryLaunchBtn.style.transform = 'scale(1)';
+        // optional arena action: display console signal
+        console.log('[CBT ARENA] Launch sequence simulated — high stakes environment');
+        // provide subtle microfeedback (optional)
+        const originalText = primaryLaunchBtn.querySelector('.launch-button-text')?.innerText;
+        // no visual glitch
       }
-      container.querySelector('#practiceScore').textContent=state.score;
-      if(state.celebrate) { container.querySelector('#practiceScore').classList.add('celebrate'); setTimeout(()=>container.querySelector('#practiceScore').classList.remove('celebrate'),500); }
     }
-
-    function renderArena(container){ competitiveView(container,'arena','⚔️ LIVE ARENA'); }
-    function renderTournament(container){ competitiveView(container,'tournament','🏟️ TOURNAMENT'); }
-
-    function competitiveView(container,mode,title){
-      container.innerHTML=`
-        <div style="display:flex; flex-direction:column; gap:1rem; height:100%;">
-          <h2 class="mono">${title}</h2>
-          <div id="${mode}GameArea" style="flex:1; display:flex; flex-direction:column; gap:1rem;">
-            <div class="tension-rail" id="${mode}TensionRail"></div>
-            <div class="timer-display" id="${mode}Timer">8</div>
-            <div class="question-box" id="${mode}Question"></div>
-            <div class="options-grid" id="${mode}Options"></div>
-            <div class="telemetry">Score: <span id="${mode}Score">0</span></div>
-            <div id="${mode}LockoutOverlay" style="display:none;" class="lockout-overlay">🔒 LOCKED</div>
-            <button class="btn-primary" id="quit${mode.charAt(0).toUpperCase()+mode.slice(1)}Btn">LEAVE</button>
-          </div>
-        </div>`;
-      const engine=new CBTEngine(mode);
-      AppState.gameSession=engine;
-      engine.onUpdate=(state)=>updateCompetitiveUI(container,state,mode);
-      engine.onSessionEnd=(s)=>alert(`Match over! +${s} PTS`);
-      engine.startSession();
-      container.querySelector(`#quit${mode.charAt(0).toUpperCase()+mode.slice(1)}Btn`).addEventListener('click',()=>{engine.stopSession();navigateTo('dashboard');});
-    }
-
-    function updateCompetitiveUI(container,state,prefix){
-      document.getElementById(`${prefix}Timer`).textContent=state.timer;
-      document.getElementById(`${prefix}Timer`).className='timer-display'+(state.timer<=3?' warning':'');
-      document.getElementById(`${prefix}TensionRail`).className='tension-rail'+(state.difficulty>3?' escalated':'');
-      document.getElementById(`${prefix}Question`).textContent=state.question.q;
-      const opts=document.getElementById(`${prefix}Options`); opts.innerHTML='';
-      state.question.options.forEach((opt,idx)=>{
-        const btn=document.createElement('button'); btn.className='option'+(state.lockout?' locked':'');
-        btn.textContent=opt; btn.addEventListener('click',()=>{if(!state.lockout)AppState.gameSession.submitAnswer(idx);});
-        opts.appendChild(btn);
+    if (primaryLaunchBtn) {
+      primaryLaunchBtn.addEventListener('mousedown', handlePressIn);
+      primaryLaunchBtn.addEventListener('mouseup', handlePressOut);
+      primaryLaunchBtn.addEventListener('mouseleave', handlePressOut);
+      primaryLaunchBtn.addEventListener('touchstart', handlePressIn, { passive: false });
+      primaryLaunchBtn.addEventListener('touchend', handlePressOut);
+      primaryLaunchBtn.addEventListener('touchcancel', handlePressOut);
+      // click also triggers launch simulation
+      primaryLaunchBtn.addEventListener('click', () => {
+        // simulate high-stakes alert or just telemetry effect (non-intrusive)
+        const tempMsg = document.createElement('div');
+        tempMsg.innerText = '⚡ CBT MATCHMAKING: SYNCHRONIZING ⚡';
+        tempMsg.style.position = 'fixed';
+        tempMsg.style.bottom = '90px';
+        tempMsg.style.left = '20px';
+        tempMsg.style.right = '20px';
+        tempMsg.style.backgroundColor = '#002B36';
+        tempMsg.style.borderLeft = `4px solid var(--accent-scientist)`;
+        tempMsg.style.padding = '10px 16px';
+        tempMsg.style.borderRadius = '12px';
+        tempMsg.style.fontFamily = 'var(--font-mono)';
+        tempMsg.style.fontSize = '11px';
+        tempMsg.style.color = 'var(--accent-scientist)';
+        tempMsg.style.zIndex = '999';
+        tempMsg.style.backdropFilter = 'blur(8px)';
+        document.body.appendChild(tempMsg);
+        setTimeout(() => tempMsg.remove(), 1800);
       });
-      document.getElementById(`${prefix}Score`).textContent=state.score;
-      document.getElementById(`${prefix}LockoutOverlay`).style.display=state.lockout?'flex':'none';
-      if(state.celebrate){ document.getElementById(`${prefix}Score`).classList.add('celebrate'); setTimeout(()=>document.getElementById(`${prefix}Score`).classList.remove('celebrate'),500); }
     }
-
-    // ----- CLAN DASHBOARD (unchanged functionally, styled) -----
-    function renderClan(container){
-      const u=AppState.currentUser, clan=AppState.clans[u.clanId], isSandbox=u.rank<3.0;
-      container.innerHTML=`
-        <div style="display:flex; flex-direction:column; gap:1rem; height:100%;">
-          <h2 class="mono">👥 ${clan.name}</h2>
-          <div class="telemetry">Combined Worth: ${clan.combinedPoints.toLocaleString()} PTS (μ=1/√N) | #${clan.placement}</div>
-          <div class="hr" style="height:1px; background:var(--color-border-rail);"></div>
-          <div id="clanGate">${isSandbox?`
-            <div class="clan-lock">[LOCK // ACCESSIBLE_AT_RANK_3.00]</div>
-            <p>Sandbox Clan ${u.clanId.split('_')[1]}</p>`:`
-            <div>League Clans unlocked:</div>
-            <div style="display:flex; gap:0.5rem;">${['A','B','C','D','E','F','G'].map(c=>`<button class="btn-primary">Clan ${c}</button>`).join('')}</div>`}
-          </div>
-          <button class="btn-primary" id="viewRosterBtn">VIEW OPERATORS</button>
-          <div class="chat-messages" id="clanChatMessages">${AppState.chatMessages.map(m=>`<div><b>${m.user}:</b> ${m.text}</div>`).join('')}</div>
-          <div class="chat-input"><input id="chatInputField" placeholder="Message..."><button id="sendChatBtn" class="btn-primary">SEND</button></div>
-          <button class="btn-primary" id="backToDashboardBtn">← BACK</button>
-          <div class="roster-overlay" id="rosterOverlay"><button id="closeRosterBtn">✕</button><div id="rosterList"></div></div>
-        </div>`;
-      container.querySelector('#viewRosterBtn').addEventListener('click',()=>{
-        const list=container.querySelector('#rosterList');
-        list.innerHTML=clan.members.map(uid=>AppState.users.find(u=>u.id===uid)).map(m=>`
-          <div class="card" style="display:flex; justify-content:space-between;">
-            <span>${m.name}</span><span class="telemetry">${m.points} PTS</span>
-            <span style="color:${m.id===u.id?'var(--color-accent-scientist)':'var(--color-border-rail)'}">${m.id===u.id?'ONLINE':'OFFLINE'}</span>
-          </div>`).join('');
-        container.querySelector('#rosterOverlay').classList.add('open');
+    
+    // additional split cards HUD simulation (cosmetic feedback)
+    const soloBtn = document.getElementById('soloPracticeBtn');
+    const airtimeBtn = document.getElementById('airtimeHubBtn');
+    if (soloBtn) {
+      soloBtn.addEventListener('click', () => {
+        console.log('[SOLO PRACTICE] AI Mentor environment staging');
+        const toast = createFloatingToast('AI MENTOR CONSOLE READY', '#0F172A');
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 1200);
       });
-      container.querySelector('#closeRosterBtn').addEventListener('click',()=>container.querySelector('#rosterOverlay').classList.remove('open'));
-      container.querySelector('#sendChatBtn').addEventListener('click',()=>{
-        const inp=container.querySelector('#chatInputField'); const msg=inp.value.trim();
-        if(msg){ AppState.chatMessages.push({user:u.name,text:msg,timestamp:Date.now()}); inp.value=''; updateChat(container); }
-      });
-      setInterval(()=>{ if(AppState.currentView==='clan'&&Math.random()<0.2){ AppState.chatMessages.push({user:'BOT',text:'Nice!',timestamp:Date.now()}); if(document.getElementById('clanChatMessages')) updateChat(document.querySelector('.view.active')); } },6000);
-      container.querySelector('#backToDashboardBtn').addEventListener('click',()=>navigateTo('dashboard','back'));
     }
-    function updateChat(container){ const c=container.querySelector('#clanChatMessages'); if(c){ c.innerHTML=AppState.chatMessages.slice(-10).map(m=>`<div><b>${m.user}:</b> ${m.text}</div>`).join(''); c.scrollTop=c.scrollHeight; } }
-
-    // ----- INIT -----
-    window.addEventListener('load', ()=>navigateTo('landing'));
-  </script>
+    if (airtimeBtn) {
+      airtimeBtn.addEventListener('click', () => {
+        console.log('[AIRTIME HUB] Redeem points / voucher logic');
+        const toast = createFloatingToast('VOUCHER REDEMPTION TERMINAL', '#0F172A');
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 1200);
+      });
+    }
+    
+    function createFloatingToast(msg, bgColor) {
+      const div = document.createElement('div');
+      div.innerText = msg;
+      div.style.position = 'fixed';
+      div.style.bottom = '95px';
+      div.style.left = '24px';
+      div.style.right = '24px';
+      div.style.backgroundColor = bgColor;
+      div.style.border = '1px solid var(--accent-scientist)';
+      div.style.padding = '10px 16px';
+      div.style.borderRadius = '12px';
+      div.style.fontFamily = 'var(--font-mono)';
+      div.style.fontSize = '11px';
+      div.style.fontWeight = 'bold';
+      div.style.color = '#E2E8F0';
+      div.style.textAlign = 'center';
+      div.style.zIndex = '1001';
+      div.style.backdropFilter = 'blur(12px)';
+      return div;
+    }
+    
+    // Update progress bar based on continuous rank
+    function initializeRankAndProgress() {
+      updateRankVisuals();
+      updateStaticWorth();
+    }
+    
+    // Simulate rank telemetry (optional for "Syntactic Fluidity" : dynamic rank after some seconds? not needed but cool live?
+    // But adhere to spec: static demo, but to show that the ranking module is functional, we add tiny live fluctuation?
+    // Original RN didn't have auto-increment, but we can keep a subtle "decay" or just no change. I'll keep static.
+    // However micro real-time feel? But we design consistent: 4.82 static. 
+    // For perfect fidelity: no auto increment. But allows for manual? Not required. but we also provide accurate progress bar.
+    initializeRankAndProgress();
+    
+    // Prevent body scroll when modal open (no impact, overlay covers)
+    // CSS ensures background fixed.
+    
+    // Also handle "pulse indicator" minor periodic animation (pure CSS)
+    // Ensure ESC key closes sheet
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && activeModal !== 'none') {
+        closeSheet();
+      }
+    });
+    
+    // for perfect touch compatibility: avoid propagation in sheet
+    bottomSheet.addEventListener('click', (e) => e.stopPropagation());
+    
+    // final reset, ensure correct start
+    updateRankVisuals();
+    
+    // small re-check for responsiveness if needed
+    window.addEventListener('resize', () => {
+      // no-op just keep layout solid
+    });
+    
+    // Show ready signal in console
+    console.log('StudySpace SPA — fully operational, bottom sheets & scaling active');
+  })();
+</script>
 </body>
 </html>
